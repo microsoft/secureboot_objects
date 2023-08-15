@@ -1,0 +1,8 @@
+{
+  "[python]": {
+    "editor.defaultFormatter": null,
+    "editor.codeActionsOnSave": {
+      "source.fixAll.ruff": true
+    }
+  }
+}
