@@ -11,6 +11,5 @@ on:
 
 jobs:
   build:
-    name: Build
-    runs-on: ubuntu-latest
-    steps:
+    name: Build Binaries
+    uses: ./.github/workflows/BuildBinaries.yml

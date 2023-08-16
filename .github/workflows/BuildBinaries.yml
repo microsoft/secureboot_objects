@@ -2,10 +2,7 @@ name: Build SecureBoot Binaries
 
 on:
   workflow_call:
-    inputs:
-      python-version:
-        description: 'Python Version'
-        default: '3.11'
+
 
 jobs:
   build:
@@ -17,10 +14,10 @@ jobs:
     - name: Checkout Self
       uses: actions/checkout@v3
     
-    - name: Set up Python ${{ inputs.python-version }}
+    - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: ${{ inputs.python-version }}
+        python-version: 3.11
         cache: 'pip'
     
     - name: Install Pip Dependencies
@@ -32,11 +29,21 @@ jobs:
       run: ruff check scripts --format=github
 
     - name: Build Intel / ARM Binaries
-      run: python scripts/secure_boot_default_keys.py --keystore keystore/keystore.toml -o artifacts
+      run: python scripts/secure_boot_default_keys.py --keystore keystore/keystore.toml -o Artifacts
     
     - name: Upload Binaries as Artifact
       uses: actions/upload-artifact@v3
       with:
-        name: binaries
-        path: artifacts/
+        name: Binaries
+        path: Artifacts/
+    
+    - name: Prepare Release Artifacts
+      run: python scripts/prepare.py Artifacts --output ReleaseArtifacts --version ${{ github.event.release.tag_name }}
+      if: startsWith(github.ref, 'refs/tags/')
+    
+    - name: Upload Release Artifacts
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: ReleaseArtifacts/*
         
