@@ -1,0 +1,13 @@
+select = [
+    "E", # Pycodestyle errors
+    "W", # Pycodestyle warnings
+    "F", # PyFlakes
+    "D", # pydocstyle
+    "I", # isort
+    "PIE", # flake8 - PIE
+    "ANN", #Annotations
+]
+
+line-length = 120
+
+pydocstyle.convention = "google"

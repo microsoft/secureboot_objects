@@ -1,0 +1,42 @@
+name: Build SecureBoot Binaries
+
+on:
+  workflow_call:
+    inputs:
+      python-version:
+        description: 'Python Version'
+        default: '3.11'
+
+jobs:
+  build:
+    name: Build
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Self
+      uses: actions/checkout@v3
+    
+    - name: Set up Python ${{ inputs.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ inputs.python-version }}
+        cache: 'pip'
+    
+    - name: Install Pip Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Run Ruff Checks
+      run: ruff check scripts --format=github
+
+    - name: Build Intel / ARM Binaries
+      run: python scripts/secure_boot_default_keys.py --keystore keystore/keystore.toml -o artifacts
+    
+    - name: Upload Binaries as Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: binaries
+        path: artifacts/
+        

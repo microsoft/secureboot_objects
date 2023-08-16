@@ -1,0 +1,16 @@
+# This workflow builds and zips the secureboot binaries and uploads them to the releases page.
+#
+# Copyright (c) Microsoft Corporation.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+
+name: SecureBoot Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:

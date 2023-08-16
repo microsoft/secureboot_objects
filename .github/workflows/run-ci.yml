@@ -1,0 +1,14 @@
+name: PR Check
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build:
+    name: Build Binaries
+    uses: ./.github/workflows/BuildBinaries.yml
+    with:
+      python-version: '3.11'
