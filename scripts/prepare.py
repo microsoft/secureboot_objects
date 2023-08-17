@@ -13,7 +13,7 @@ import tempfile
 
 LAYOUT = {
     "edk2-arm-secureboot-binaries": ["Aarch64", "Arm"],
-    "edk2-intel-secureboot-bianries": ["Ia32", "X64"],
+    "edk2-intel-secureboot-binaries": ["Ia32", "X64"],
 }
 
 def main() -> int:

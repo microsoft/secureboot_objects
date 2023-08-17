@@ -1,9 +1,9 @@
 # Secure Boot Objects
 
 This repository is used to hold the secure boot objects recommended by
-Microsoft to use for your KEK, DB, and DBX. This repository utilizes a script
-(`scripts/secure_boot_default_keys.py`) to generate the binary blobs based off
-of the `keystore.toml` configuration file.
+Microsoft to use as the default KEK, DB, and DBX variables. This repository
+utilizes a script (`scripts/secure_boot_default_keys.py`) to generate the
+binary blobs based off of the `keystore.toml` configuration file.
 
 On a release github release, the script is run and the generated binaries are
 bundled, zipped, and attached to the release so that they can be consumed by
@@ -11,8 +11,8 @@ platforms.
 
 ## Transparency
 
-By Keeping the contents of the KeK, Db, and Dbx in human readable form in this
-repository, it enables developers to easily review the contents and make
+By Keeping the contents of the KeK, Db, and Dbx in a human readable form in
+this repository, it enables developers to easily review the contents and make
 changes as needed. This also enables an easy way for the KeK, Db, and (mainly)
 the Dbx to be updated transparently and then consumed by any platform!
 
@@ -21,8 +21,8 @@ the Dbx to be updated transparently and then consumed by any platform!
 The secure boot binary objects are formatted to the expected EDKII data
 structures to enable simple integration into any platform. Please refer to
 [SecureBootKeyStoreLibOem](https://github.com/microsoft/mu_oem_sample/tree/release/202302/OemPkg/Library/SecureBootKeyStoreLibOem)
-to show one example on how to easily integrate these binaries into your
-platform. The EDKII build system even supports easily adding to the default
+to see one example on how to easily integrate these binaries into your
+platform. The EDKII build system even supports easily appending to the default
 values suggested by Microsoft!
 
 This is just one suggested way of consuming the binary objects. There are of

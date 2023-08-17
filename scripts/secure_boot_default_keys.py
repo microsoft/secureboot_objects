@@ -4,7 +4,6 @@
 # SPDX-License-Identifier: BSD-2-Clause-Patent
 ##
 """A command line script used to build the authenticated variable structures for Secureboot."""
-
 import base64
 import csv
 import logging
