@@ -15,7 +15,7 @@ name: Prepare Secure Boot Binaries
 on:
   push:
     branches: [ "main" ]
-  pull_request:
+  pull_request_target:
     branches: [ "main" ]
   release:
     types: [published]
