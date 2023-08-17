@@ -25,6 +25,10 @@ to show one example on how to easily integrate these binaries into your
 platform. The EDKII build system even supports easily adding to the default
 values suggested by Microsoft!
 
+This is just one suggested way of consuming the binary objects. There are of
+course plenty of others, such as storing them as a Freeform Ffs file in an
+FV.
+
 ## secure_boot_default_keys.py
 
 This script ingests a configuration file and generates binary blobs for each

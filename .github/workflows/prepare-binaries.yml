@@ -1,12 +1,32 @@
-name: Build SecureBoot Binaries
-
+# This workflow call is responsible for building the secure boot binaries and
+# uploading them as a build artifact. This is for PR Checks.
+#
+# If the workflow call is triggered by a release, (i.e. a tag push), then it
+# will additionally archive them (zip, tar.gz) and upload the archives to the
+# release as an asset.
+#
+# NOTE: The GITHUB_TOKEN is used by the action-gh-release@v1 action to upload
+#       the archives to the release, and thus must have Read and Write
+#       permissions.
+#
+# Copyright (c) Microsoft Corporation.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+name: Prepare Secure Boot Binaries
 on:
-  workflow_call:
-
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  release:
+    types: [published]
 
 jobs:
   build:
     name: Build
+    
+    permissions:
+        actions: write
+        contents: read
 
     runs-on: ubuntu-latest
 

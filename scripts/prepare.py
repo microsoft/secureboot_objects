@@ -38,7 +38,7 @@ def main() -> int:
 
     for key, value in LAYOUT.items():
         tmp_dir = tempfile.TemporaryDirectory()
-        pathlib.Path(tmp_dir.name, "VERSION").write_text(args.version)
+        pathlib.Path(tmp_dir.name, "version").write_text(args.version)
         for arch in value:
             if not (in_path / arch).exists():
                 raise RuntimeError(f"Missing {arch} directory in {in_path}")
