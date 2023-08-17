@@ -26,7 +26,7 @@ jobs:
     
     permissions:
         actions: write
-        contents: read
+        contents: write
 
     runs-on: ubuntu-latest
 
