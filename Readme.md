@@ -108,7 +108,3 @@ For each file in the toml file, the script supports the following entries:
    Included in the readme if provided
 3. `sha1 (Optional<str>)`: The sha1 hash of the file. Included in the readme
    if provided.
-
-## TODO
-
-1. make `path` optional and add support for downloading the file from the url.
