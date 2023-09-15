@@ -12,8 +12,10 @@ import sys
 import tempfile
 
 LAYOUT = {
-    "edk2-arm-secureboot-binaries": ["Aarch64", "Arm"],
-    "edk2-intel-secureboot-binaries": ["Ia32", "X64"],
+    "edk2-arm-secureboot-binaries": "Arm",
+    "edk2-aarch64-secureboot-binaries": "Aarch64",
+    "edk2-ia32-secureboot-binaries": "Ia32",
+    "edk2-x64-secureboot-binaries": "X64",
 }
 
 def main() -> int:
@@ -36,16 +38,15 @@ def main() -> int:
         if file_path.is_file():
             file_path.unlink()
 
-    for key, value in LAYOUT.items():
+    for name, arch in LAYOUT.items():
         tmp_dir = tempfile.TemporaryDirectory()
         pathlib.Path(tmp_dir.name, "version").write_text(args.version)
-        for arch in value:
-            if not (in_path / arch).exists():
-                raise RuntimeError(f"Missing {arch} directory in {in_path}")
-            shutil.copytree(in_path / arch, pathlib.Path(tmp_dir.name, arch))
+        if not (in_path / arch).exists():
+            raise RuntimeError(f"Missing {arch} directory in {in_path}")
+        shutil.copytree(in_path / arch, pathlib.Path(tmp_dir.name), dirs_exist_ok=True)
 
-        shutil.make_archive(out_path / key, "zip", tmp_dir.name)
-        shutil.make_archive(out_path / key, "gztar", tmp_dir.name)
+        shutil.make_archive(out_path / name, "zip", tmp_dir.name)
+        shutil.make_archive(out_path / name, "gztar", tmp_dir.name)
 
 
 if __name__ == "__main__":
