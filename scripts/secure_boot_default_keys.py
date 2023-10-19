@@ -189,6 +189,7 @@ def build_default_keys(keystore: dict) -> dict:
     # Add handlers here for different file types.
     file_handler = {
         ".crt": _convert_crt_to_signature_list,
+        ".der": _convert_crt_to_signature_list, # DER is just a more specific certificate format than CRT
         '.csv': _convert_csv_to_signature_list
     }
 
@@ -246,9 +247,18 @@ def create_readme(keystore: dict, arch: str) -> str:
 
 This external dependency contains the default values suggested by microsoft the KEK, DB, and DBX UEFI variables.
 
-1. The KEK (Key Exchange Key) is a list of certificates that verify the signature of other keys attempting to update the DB and DBX.
-2. The DB (Signature Database) is a list of certificates that verify the signature of a binary attempting to execute on the system.
-3. The DBX (Forbidden Signature Database) is a list of signatures that are forbidden from executing on the system.
+Additionally, it contains an optional shared PK certificate that may be used as the root of trust for the system.
+The shared PK certificate is an offering from Microsoft. Instead of a original equipment manufacturer (OEM)
+managed PK, an OEM may choose to use the shared PK certificate managed by Microsoft. Partically, this may be
+useful as default on non production code provided to an OEM by an indenpendent vendor (IV).
+
+1. The PK (Platform Key) is a single certificate that is the root of trust for the system. This certificate is used
+    to verify the KEK.
+2. The KEK (Key Exchange Key) is a list of certificates that verify the signature of other keys attempting to update
+   the DB and DBX.
+3. The DB (Signature Database) is a list of certificates that verify the signature of a binary attempting to execute
+   on the system.
+4. The DBX (Forbidden Signature Database) is a list of signatures that are forbidden from executing on the system.
 
 Please review [Microsoft's documentation](https://learn.microsoft.com/en-us/windows-hardware/manufacture/desktop/windows-secure-boot-key-creation-and-management-guidance?view=windows-11#15-keys-required-for-secure-boot-on-all-pcs)
 for more information on key requirements if appending to the defaults provided in this external dependency.
@@ -262,7 +272,7 @@ for more information on key requirements if appending to the defaults provided i
         readme += f"\n## {key}\n\n"
 
         if value.get("help", ""):
-            readme += f"{value.get('help', '')}\n\n"
+            readme += f"{_split_text_by_length(value.get('help', ''))}\n\n"
         readme += "Files Included:\n\n"
 
         for file_dict in value["files"]:
@@ -315,6 +325,24 @@ def main() -> int:
             with open(readme_path, "wb") as f:
                 f.write(create_readme(keystore, arch))
     return 0
+
+def _split_text_by_length(text: str, max_length: int = 120) -> str:
+    lines = []
+    current_line = ""
+
+    words = text.split()
+    for word in words:
+        if len(current_line) + len(word) + 1 <= max_length:
+            if current_line:
+                current_line += " "
+            current_line += word
+        else:
+            lines.append(current_line)
+            current_line = word
+    if current_line:
+        lines.append(current_line)
+
+    return "\n".join(lines)
 
 
 if __name__ == "__main__":
