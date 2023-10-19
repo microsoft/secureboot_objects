@@ -58,6 +58,8 @@ architecture to provide information about the files inside each binary blob
 That is to say, if you define a toml file similar to this:
 
 ```toml
+[MyCustomPk]
+
 [MyCustomKek]
 
 [MyCustomDb]
@@ -70,21 +72,25 @@ Binary blobs will be created with the following folder structure:
 ``` cmd
 Artifacts
 ├── Aarch64
+│   ├── MyCustomPk.bin
 │   ├── MyCustomKek.bin
 │   ├── MyCustomDb.bin
 │   ├── MyCustomDbx.bin
 │   └── README.md
 ├── Arm
+│   ├── MyCustomPk.bin
 │   ├── MyCustomKek.bin
 │   ├── MyCustomDb.bin
 │   ├── MyCustomDbx.bin
 │   └── README.md
 ├── Ia32
+│   ├── MyCustomPk.bin
 │   ├── MyCustomKek.bin
 │   ├── MyCustomDb.bin
 │   ├── MyCustomDbx.bin
 │   └── README.md
 └── X64
+    ├── MyCustomPk.bin
     ├── MyCustomKek.bin
     ├── MyCustomDb.bin
     ├── MyCustomDbx.bin
