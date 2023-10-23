@@ -37,7 +37,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: 3.11
+        python-version: 3.12
         cache: 'pip'
 
     - name: Install Pip Dependencies
@@ -47,6 +47,9 @@ jobs:
 
     - name: Run Ruff Checks
       run: ruff check scripts --format=github
+    
+    - name: Run Unit Tests
+      run: pytest scripts/
 
     - name: Build Intel / ARM Binaries
       run: python scripts/secure_boot_default_keys.py --keystore keystore/keystore.toml -o Artifacts
