@@ -53,8 +53,8 @@ options:
 A configuration file must be provided to the script to generate the binary
 information. The script generates a binary blob for each table entry in the
 toml file (a table is each `[]` in the toml file) and for each supported
-architecture (Currently Intel, ARM). We also generate a readme for each
-architecture to provide information about the files inside each binary blob
+architecture (Currently Ia32, X64, Arm, Aarch64). We also generate a readme for
+eacharchitecture to provide information about the files inside each binary blob
 
 That is to say, if you define a toml file similar to this:
 

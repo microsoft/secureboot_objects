@@ -4,3 +4,5 @@
 **/README.md
 Pipfile
 .ruff_cache/*
+Artifacts/*
+ReleaseArtifacts/*
