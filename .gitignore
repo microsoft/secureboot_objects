@@ -6,3 +6,4 @@ Pipfile
 .ruff_cache/*
 Artifacts/*
 ReleaseArtifacts/*
+Scripts/__pycache__/*
