@@ -327,6 +327,15 @@ def main() -> int:
     return 0
 
 def _split_text_by_length(text: str, max_length: int = 120) -> str:
+    """Inserts newline characters into text to ensure that no line is longer than max_length.
+
+    Args:
+        text: The text to split.
+        max_length: The maximum length of each line.
+
+    Returns:
+        str: The text with newline characters inserted.
+    """
     lines = []
     current_line = ""
 
