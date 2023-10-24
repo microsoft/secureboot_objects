@@ -23,7 +23,7 @@ def test_layout(tmpdir: pathlib.Path) -> None:
     artifacts.mkdir()
 
     folder_list = ["Arm", "Aarch64", "Ia32", "X64"]
-    file_list = ["Default3PDb.bin", "DefaultDb.bin", "DefaultKEK.bin", "DefaultPK.bin", "DefaultPk.bin", "README.md"]
+    file_list = ["Default3PDb.bin", "DefaultDb.bin", "DefaultDbx.bin", "DefaultKEK.bin", "DefaultPK.bin", "README.md"]
 
     for folder in folder_list:
         folder = artifacts / folder
@@ -45,11 +45,10 @@ def test_layout(tmpdir: pathlib.Path) -> None:
 
     zip_file_list = list(pathlib.Path(tmpdir / OUT_FILE).glob("*"))
 
-
     assert len(zip_file_list) == 8
 
     for file in zip_file_list:
         with tempfile.TemporaryDirectory() as temp_unzip_dir:
             shutil.unpack_archive(file, temp_unzip_dir)
-            assert len(list(pathlib.Path(temp_unzip_dir).glob("*"))) == 6
 
+            assert len(list(pathlib.Path(temp_unzip_dir).glob("*"))) == 7
