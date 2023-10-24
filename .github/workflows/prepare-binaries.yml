@@ -47,7 +47,7 @@ jobs:
         pip install -r pip-requirements.txt
 
     - name: Run Ruff Checks
-      run: ruff check scripts --format=github
+      run: ruff check scripts --output-format=github
 
     - name: Run Unit Tests
       run: pytest scripts/
