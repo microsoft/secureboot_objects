@@ -1,3 +1,9 @@
-Artifacts/*
+**/*.zip
+**/*.tar.gz
+**/*.bin
+**/README.md
 Pipfile
 .ruff_cache/*
+Artifacts/*
+ReleaseArtifacts/*
+Scripts/__pycache__/*

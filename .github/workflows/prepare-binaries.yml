@@ -1,0 +1,71 @@
+# This workflow call is responsible for building the secure boot binaries and
+# uploading them as a build artifact. This is for PR Checks.
+#
+# If the workflow call is triggered by a release, (i.e. a tag push), then it
+# will additionally archive them (zip, tar.gz) and upload the archives to the
+# release as an asset.
+#
+# NOTE: The GITHUB_TOKEN is used by the action-gh-release@v1 action to upload
+#       the archives to the release, and thus must have Read and Write
+#       permissions.
+#
+# Copyright (c) Microsoft Corporation.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+name: Prepare Secure Boot Binaries
+on:
+  push:
+    branches: [ "main" ]
+  pull_request_target:
+    branches: [ "main" ]
+  release:
+    types: [published]
+
+jobs:
+  build:
+    name: Build
+
+    permissions:
+        actions: write
+        contents: write
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Self
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.12
+        cache: 'pip'
+
+    - name: Install Pip Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r pip-requirements.txt
+
+    - name: Run Ruff Checks
+      run: ruff check scripts --format=github
+    
+    - name: Run Unit Tests
+      run: pytest scripts/
+
+    - name: Build Intel / ARM Binaries
+      run: python scripts/secure_boot_default_keys.py --keystore keystore/keystore.toml -o Artifacts
+
+    - name: Upload Binaries as Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: Binaries
+        path: Artifacts/
+
+    - name: Prepare Release Artifacts
+      run: python scripts/prepare.py Artifacts --output ReleaseArtifacts --version ${{ github.event.release.tag_name }}
+      if: startsWith(github.ref, 'refs/tags/')
+
+    - name: Upload Release Artifacts
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: ReleaseArtifacts/*
