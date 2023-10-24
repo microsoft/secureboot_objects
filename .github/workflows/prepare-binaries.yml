@@ -70,3 +70,4 @@ jobs:
       if: startsWith(github.ref, 'refs/tags/')
       with:
         files: ReleaseArtifacts/*
+        token: ${{ secrets.GH_UEFI_BOT_PUBLISH_TOKEN }}
