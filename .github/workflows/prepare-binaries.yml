@@ -39,6 +39,7 @@ jobs:
       with:
         python-version: 3.12
         cache: 'pip'
+        cache-dependency-path: pip-requirements.txt
 
     - name: Install Pip Dependencies
       run: |
@@ -47,7 +48,7 @@ jobs:
 
     - name: Run Ruff Checks
       run: ruff check scripts --format=github
-    
+
     - name: Run Unit Tests
       run: pytest scripts/
 
