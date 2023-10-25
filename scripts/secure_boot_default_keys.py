@@ -6,6 +6,8 @@
 """A command line script used to build the authenticated variable structures for Secureboot."""
 import base64
 import csv
+import datetime
+import io
 import logging
 import uuid
 from pathlib import Path
@@ -16,15 +18,13 @@ from edk2toollib.uefi.authenticated_variables_structure_support import (
     EfiSignatureDataEfiCertSha256,
     EfiSignatureDataFactory,
     EfiSignatureList,
+    EfiTime,
 )
+from edk2toollib.uefi.wincert import WinCertUefiGuid
 
 DEFAULT_MS_SIGNATURE_GUID = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
-ARCH_MAP = {
-    "64-bit": "x64",
-    "32-bit": "ia32",
-    "32-bit ARM": "arm",
-    "64-bit ARM": "aarch64"
-}
+ARCH_MAP = {"64-bit": "x64", "32-bit": "ia32", "32-bit ARM": "arm", "64-bit ARM": "aarch64"}
+
 
 def _is_pem_encoded(certificate_data: Union[str, bytes]) -> bool:
     """This function is used to check if a certificate is pem encoded (base64 encoded).
@@ -38,7 +38,7 @@ def _is_pem_encoded(certificate_data: Union[str, bytes]) -> bool:
     try:
         if isinstance(certificate_data, str):
             # If there's any unicode here, an exception will be thrown and the function will return false
-            sb_bytes = bytes(certificate_data, 'ascii')
+            sb_bytes = bytes(certificate_data, "ascii")
         elif isinstance(certificate_data, bytes):
             sb_bytes = certificate_data
         else:
@@ -46,7 +46,8 @@ def _is_pem_encoded(certificate_data: Union[str, bytes]) -> bool:
 
         return base64.b64encode(base64.b64decode(sb_bytes)) == sb_bytes
     except Exception:
-            return False
+        return False
+
 
 def _convert_pem_to_der(certificate_data: Union[str, bytes]) -> bytes:
     """This function is used to convert a pem encoded certificate to a der encoded certificate.
@@ -59,9 +60,10 @@ def _convert_pem_to_der(certificate_data: Union[str, bytes]) -> bytes:
     """
     if isinstance(certificate_data, str):
         # If there's any unicode here, an exception will be thrown and the function will return false
-        certificate_data = bytes(certificate_data, 'ascii')
+        certificate_data = bytes(certificate_data, "ascii")
 
     return base64.b64decode(certificate_data)
+
 
 def _invalid_file(file: str, **kwargs: any) -> None:
     """This function is used to handle invalid filetypes.
@@ -78,7 +80,7 @@ def _invalid_file(file: str, **kwargs: any) -> None:
     raise ValueError(f"Invalid filetype for conversion: {file}")
 
 
-def _convert_crt_to_signature_list(file: str, signature_owner: str=DEFAULT_MS_SIGNATURE_GUID, **kwargs: any) -> bytes:
+def _convert_crt_to_signature_list(file: str, signature_owner: str = DEFAULT_MS_SIGNATURE_GUID, **kwargs: any) -> bytes:
     """This function converts a single crt file to a signature list.
 
     Args:
@@ -94,11 +96,9 @@ def _convert_crt_to_signature_list(file: str, signature_owner: str=DEFAULT_MS_SI
     if signature_owner is not None and not isinstance(signature_owner, uuid.UUID):
         signature_owner = uuid.UUID(signature_owner)
 
-    siglist = EfiSignatureList(
-        typeguid=EfiSignatureDataFactory.EFI_CERT_X509_GUID)
+    siglist = EfiSignatureList(typeguid=EfiSignatureDataFactory.EFI_CERT_X509_GUID)
 
     with open(file, "rb") as crt_file, TemporaryFile() as temp_file:
-
         certificate = crt_file.read()
         if _is_pem_encoded(certificate):
             certificate = _convert_pem_to_der(certificate)
@@ -106,10 +106,7 @@ def _convert_crt_to_signature_list(file: str, signature_owner: str=DEFAULT_MS_SI
         temp_file.write(certificate)
         temp_file.seek(0)
 
-        sigdata = EfiSignatureDataFactory.create(
-            EfiSignatureDataFactory.EFI_CERT_X509_GUID,
-            temp_file,
-            signature_owner)
+        sigdata = EfiSignatureDataFactory.create(EfiSignatureDataFactory.EFI_CERT_X509_GUID, temp_file, signature_owner)
 
         # X.509 certificates are variable size, so they must be contained in their own signature list
         siglist.AddSignatureHeader(None, SigSize=sigdata.get_total_size())
@@ -119,10 +116,7 @@ def _convert_crt_to_signature_list(file: str, signature_owner: str=DEFAULT_MS_SI
 
 
 def _convert_csv_to_signature_list(
-    file: str,
-    signature_owner: str=DEFAULT_MS_SIGNATURE_GUID,
-    target_arch:str=None,
-    **kwargs: any
+    file: str, signature_owner: str = DEFAULT_MS_SIGNATURE_GUID, target_arch: str = None, **kwargs: any
 ) -> bytes:
     """This function is used to handle the csv files.
 
@@ -145,15 +139,13 @@ def _convert_csv_to_signature_list(
     if signature_owner is not None and not isinstance(signature_owner, uuid.UUID):
         signature_owner = uuid.UUID(signature_owner)
 
-    siglist = EfiSignatureList(
-        typeguid=EfiSignatureDataFactory.EFI_CERT_SHA256_GUID)
+    siglist = EfiSignatureList(typeguid=EfiSignatureDataFactory.EFI_CERT_SHA256_GUID)
 
     with open(file, "r") as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=",")
         for i, row in enumerate(csv_reader):
             if i == 0:
-                siglist.AddSignatureHeader(
-                    None, SigSize=EfiSignatureDataEfiCertSha256.STATIC_STRUCT_SIZE)
+                siglist.AddSignatureHeader(None, SigSize=EfiSignatureDataEfiCertSha256.STATIC_STRUCT_SIZE)
                 continue
 
             authenticode_hash = row[1]
@@ -166,10 +158,96 @@ def _convert_csv_to_signature_list(
                 continue
 
             sigdata = EfiSignatureDataEfiCertSha256(
-                None, None, bytearray.fromhex(authenticode_hash), sigowner = signature_owner)
+                None, None, bytearray.fromhex(authenticode_hash), sigowner=signature_owner
+            )
             siglist.AddSignatureData(sigdata)
 
     return siglist.encode()
+
+
+def _convert_to_empty_auth_var(esl_payload: bytes) -> bytes:
+    """This function is used to add a empty authenticated variable header to a secure boot efi signature list.
+
+    Args:
+        esl_payload: The secure boot efi signature list
+
+    Returns:
+        bytes: The wrapped empty authenticated secure boot efi signature list
+    """
+    # See the following for code implementation:
+    # https://github.com/microsoft/mu_tiano_plus/blob/5c96768c404d1e4e32b1fea6bfd83e588c0f5d67/SecurityPkg/Library/AuthVariableLib/AuthService.c#L656C13-L656C52
+    #
+    # This is the ASN.1 structure and it's encoding of the AUTHINFO2 signature currently needed to initialize
+    # a secure boot variable without being signed:
+    #
+    # ContentInfo SEQUENCE (4 elem)
+    #   contentType ContentType [?] INTEGER 1
+    #   content [0] [?] SET (1 elem)
+    #       ANY SEQUENCE (2 elem)
+    #           OBJECT IDENTIFIER 2.16.840.1.101.3.4.2.1 sha-256 (NIST Algorithm)
+    #           NULL
+    #   SEQUENCE (1 elem)
+    #       OBJECT IDENTIFIER 1.2.840.113549.1.7.1 data (PKCS #7)
+    #   SET (0 elem)
+    #
+    empty_pkcs7_signature = bytearray(
+        [
+            0x30,
+            0x23,
+            0x02,
+            0x01,
+            0x01,
+            0x31,
+            0x0F,
+            0x30,
+            0x0D,
+            0x06,
+            0x09,
+            0x60,
+            0x86,
+            0x48,
+            0x01,
+            0x65,
+            0x03,
+            0x04,
+            0x02,
+            0x01,
+            0x05,
+            0x00,
+            0x30,
+            0x0B,
+            0x06,
+            0x09,
+            0x2A,
+            0x86,
+            0x48,
+            0x86,
+            0xF7,
+            0x0D,
+            0x01,
+            0x07,
+            0x01,
+            0x31,
+            0x00,
+        ]
+    )
+
+    buffer = io.BytesIO()
+    buffer.write(empty_pkcs7_signature)
+    buffer.seek(0)
+
+    # Microsoft uses  "2010-03-06T19:17:21Z" for all secure boot UEFI authenticated variables
+    efi_time = EfiTime(time=datetime.datetime(2010, 3, 6, 19, 17, 21))
+    auth_info2 = WinCertUefiGuid()
+
+    # Add the empty PKCS7 signature to the AUTHINFO2 structure
+    auth_info2.add_cert_data(buffer)
+
+    # Create the header for the authenticated variable
+    header = efi_time.encode() + auth_info2.encode()
+
+    # Return the header + the original secure boot efi signature list
+    return header + esl_payload
 
 
 def build_default_keys(keystore: dict) -> dict:
@@ -189,14 +267,14 @@ def build_default_keys(keystore: dict) -> dict:
     # Add handlers here for different file types.
     file_handler = {
         ".crt": _convert_crt_to_signature_list,
-        ".der": _convert_crt_to_signature_list, # DER is just a more specific certificate format than CRT
-        '.csv': _convert_csv_to_signature_list
+        # DER is just a more specific certificate format than CRT
+        ".der": _convert_crt_to_signature_list,
+        ".csv": _convert_csv_to_signature_list,
     }
 
     # The json file should be a list of signatures including the owner of the signature.
     for variable in keystore:
         for arch in set(ARCH_MAP.values()):
-
             # Skip generating this blob if arch is specified and it does not match
             if keystore[variable].get("arch", arch) != arch:
                 logging.debug(f"Skipping {variable} for {arch} due to config file settings.")
@@ -205,8 +283,7 @@ def build_default_keys(keystore: dict) -> dict:
             # The signature database is a byte array that will be added to the default keys.
             signature_database = bytes()
 
-            signature_owner = keystore[variable].get(
-                "signature_owner", "77fa9abd-0359-4d32-60bd-28f4e78f784b")
+            signature_owner = keystore[variable].get("signature_owner", "77fa9abd-0359-4d32-60bd-28f4e78f784b")
             files = keystore[variable]["files"]
             # The files should be handled differently depending on the file extension.
             for file_dict in files:
@@ -218,20 +295,16 @@ def build_default_keys(keystore: dict) -> dict:
 
                 logging.info("Converting %s to signature list.", file_path)
 
-                signature_database += convert_handler(
-                    file=file_path,
-                    signature_owner=signature_owner,
-                    target_arch=arch
-                )
+                signature_database += convert_handler(file=file_path, signature_owner=signature_owner, target_arch=arch)
 
-                logging.info(
-                    "Appended %s to signature database for variable %s.", file_path, variable)
+                logging.info("Appended %s to signature database for variable %s.", file_path, variable)
 
             default_keys[arch, variable] = signature_database
 
             logging.debug("Signature Database for %s:", variable)
 
     return default_keys
+
 
 def create_readme(keystore: dict, arch: str) -> str:
     """Generates a README.md file for a given architecture.
@@ -262,9 +335,44 @@ useful as default on non production code provided to an OEM by an indenpendent v
 
 Please review [Microsoft's documentation](https://learn.microsoft.com/en-us/windows-hardware/manufacture/desktop/windows-secure-boot-key-creation-and-management-guidance?view=windows-11#15-keys-required-for-secure-boot-on-all-pcs)
 for more information on key requirements if appending to the defaults provided in this external dependency.
-""" # noqa: E501
-    for key, value in keystore.items():
 
+## Firmware Folder
+This folder contains the defaults in a EFI Signature List Format. This format is used by the UEFI firmware to
+initialize the secure boot variables.
+Thses files are in the format described by [EFI_SIGNATURE_DATA](https://uefi.org/specs/UEFI/2.10/32_Secure_Boot_and_Driver_Signing.html?highlight=authenticated%20variable#efi-signature-data)
+
+## Imaging Folder
+This folder contains the defaults in a format that may be used by imaging tools during imagine (such as tools that call
+SetFirmwareVariableEx(..) like [WinPE](https://learn.microsoft.com/en-us/windows-hardware/manufacture/desktop/winpe-intro?view=windows-11))
+to initialize the secure boot variables. These files have a empty authenticated variable header prepended to the EFI Signature List.
+These variables are not signed and may be used to initialize the secure on systems that support this feature.
+
+The additional data appended is a empty [EFI_VARIABLE_AUTHENICATION_2](https://uefi.org/specs/UEFI/2.10/08_Services_Runtime_Services.html?highlight=efi_time#using-the-efi-variable-authentication-2-descriptor)
+descriptor and is as follows:
+[EFI_TIME](https://uefi.org/sites/default/files/resources/UEFI_Spec_2_8_final.pdf#page=158) +
+[WIN_CERTIFICATE_UEFI_GUID](https://uefi.org/specs/UEFI/2.10/32_Secure_Boot_and_Driver_Signing.html?highlight=authenticated%20variable#win-certificate-uefi-guid) +
+[PKCS7](https://tools.ietf.org/html/rfc2315#section-9.1) +
+Data
+
+Where the PKCS7 is a empty signature with the following ASN.1 structure:
+```text
+ContentInfo SEQUENCE (4 elem)
+    contentType ContentType [?] INTEGER 1
+    content [0] [?] SET (1 elem)
+        ANY SEQUENCE (2 elem)
+            OBJECT IDENTIFIER 2.16.840.1.101.3.4.2.1 sha-256 (NIST Algorithm)
+            NULL
+    SEQUENCE (1 elem)
+        OBJECT IDENTIFIER 1.2.840.113549.1.7.1 data (PKCS #7)
+    SET (0 elem)
+```
+
+For some firmware implementations, the PK is required to be at-least self signed during the imaging process.
+However [Project Mu has a relaxed implementation](https://github.com/microsoft/mu_tiano_plus/blob/5c96768c404d1e4e32b1fea6bfd83e588c0f5d67/SecurityPkg/Library/AuthVariableLib/AuthService.c#L656C13-L656C52)
+that allows for the PK to use an empty signature.
+
+"""  # noqa: E501
+    for key, value in keystore.items():
         # Filter out Tables not used for the specific architecture
         if keystore[key].get("arch", arch) != arch:
             logging.debug(f"Skipping {key} for {arch} due to config file settings.")
@@ -283,19 +391,41 @@ for more information on key requirements if appending to the defaults provided i
                 readme += f"* <{file_dict['url']}>\n"
     return bytes(readme, "utf-8")
 
+
+def create_folder(directory: Path):
+    """Creates a folder if it does not exist.
+
+    Args:
+        directory: The path to the folder to create.
+
+    Returns:
+        None
+    """
+    directory.mkdir(exist_ok=True, parents=True)
+    directory.touch()
+
+
 def main() -> int:
     """Main entry point into the tool."""
     import argparse
     import pathlib
 
-    import tomllib
+    import tomli as tomllib
 
-    parser = argparse.ArgumentParser(
-        description="Build the default keys for secure boot.")
-    parser.add_argument("--keystore", help="A json file containing the keys mapped to certificates and hashes.",
-                        default="keystore.toml", required=True)
-    parser.add_argument("-o", "--output", type=pathlib.Path, default=pathlib.Path.cwd() / "Artifacts",
-                        help="The output directory for the default keys.")
+    parser = argparse.ArgumentParser(description="Build the default keys for secure boot.")
+    parser.add_argument(
+        "--keystore",
+        help="A json file containing the keys mapped to certificates and hashes.",
+        default="keystore.toml",
+        required=True,
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        type=pathlib.Path,
+        default=pathlib.Path.cwd() / "Artifacts",
+        help="The output directory for the default keys.",
+    )
 
     args = parser.parse_args()
 
@@ -308,23 +438,34 @@ def main() -> int:
         for key, value in default_keys.items():
             arch, variable = key
 
-            out_dir = Path(args.output, arch.capitalize())
+            parent = Path(args.output, arch.capitalize())
+            create_folder(parent)
 
-            out_dir.mkdir(exist_ok=True, parents=True)
-            out_dir.touch()
+            firmware_dir = Path(parent, "Firmware")
+            create_folder(firmware_dir)
 
-            out_file = Path(out_dir, f"{variable}.bin")
+            out_file = Path(firmware_dir, f"{variable}.bin")
             if out_file.exists():
                 out_file.unlink()
             with open(out_file, "wb") as f:
                 f.write(value)
 
-            readme_path = Path(out_dir, "README.md")
+            imaging_dir = Path(parent, "Imaging")
+            create_folder(imaging_dir)
+
+            out_file = Path(imaging_dir, f"{variable}.bin")
+            if out_file.exists():
+                out_file.unlink()
+            with open(out_file, "wb") as f:
+                f.write(_convert_to_empty_auth_var(value))
+
+            readme_path = Path(parent, "README.md")
             if readme_path.exists():
                 readme_path.unlink()
             with open(readme_path, "wb") as f:
                 f.write(create_readme(keystore, arch))
     return 0
+
 
 def _split_text_by_length(text: str, max_length: int = 120) -> str:
     """Inserts newline characters into text to ensure that no line is longer than max_length.
@@ -356,6 +497,6 @@ def _split_text_by_length(text: str, max_length: int = 120) -> str:
 
 if __name__ == "__main__":
     import sys
-    logging.basicConfig(level=logging.INFO,
-                        format="%(levelname)s: %(message)s")
+
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
     sys.exit(main())
