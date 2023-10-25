@@ -6,6 +6,8 @@
 """A command line script used to build the authenticated variable structures for Secureboot."""
 import base64
 import csv
+import datetime
+import io
 import logging
 import uuid
 from pathlib import Path
@@ -16,12 +18,15 @@ from edk2toollib.uefi.authenticated_variables_structure_support import (
     EfiSignatureDataEfiCertSha256,
     EfiSignatureDataFactory,
     EfiSignatureList,
+    EfiTime,
 )
+from edk2toollib.uefi.wincert import WinCertUefiGuid
 
 # Random UUID used as the signature owner if none is provided.
 INSTANCE_SIGNATURE_OWNER = str(uuid.uuid4())
 
 ARCH_MAP = {"64-bit": "x64", "32-bit": "ia32", "32-bit ARM": "arm", "64-bit ARM": "aarch64"}
+
 
 
 def _is_pem_encoded(certificate_data: Union[str, bytes]) -> bool:
@@ -161,6 +166,72 @@ def _convert_csv_to_signature_list(file: str, signature_owner: str, target_arch:
     return siglist.encode()
 
 
+def _create_time_based_payload(esl_payload: bytes) -> bytes:
+    """This function creates a authenticated variable with an empty signature for the provided payload.
+
+    Args:
+        esl_payload (bytes): The secure boot efi signature list
+
+    Returns:
+        (bytes): an authenticated variable with an empty signature
+    """
+    # See the following for code implementation:
+    # https://github.com/microsoft/mu_tiano_plus/blob/5c96768c404d1e4e32b1fea6bfd83e588c0f5d67/SecurityPkg/Library/AuthVariableLib/AuthService.c#L656C13-L656C52
+    #
+    # This is the ASN.1 structure and it's encoding of the AUTHINFO2 signature currently needed to initialize
+    # a secure boot variable without being signed:
+
+    # ContentInfo SEQUENCE (4 elem)
+    content_info_sequence = [0x30, 0x23]
+    #   contentType ContentType [?] INTEGER 1
+    content_type_integer = [0x02, 0x01, 0x01]
+    #   content [0] [?] SET (1 elem)
+    content_set = [0x31, 0x0F]
+    #       ANY SEQUENCE (2 elem)
+    any_sequence = [
+        0x30, 0x0D,
+        # OBJECT IDENTIFIER 2.16.840.1.101.3.4.2.1 (sha-256, NIST Algorithm)
+        0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01,
+        # NULL
+        0x05, 0x00,
+    ]
+    #   SEQUENCE (1 elem)
+    sequence = [
+        0x30, 0x0B,
+        # OBJECT IDENTIFIER 1.2.840.113549.1.7.1 (data, PKCS #7)
+        0x06, 0x09, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x07, 0x01,
+    ]
+    # SET (0 elements)
+    set_empty = [0x31, 0x00]
+
+    # Combine all sections
+    empty_pkcs7_signature = bytearray(
+        content_info_sequence +
+        content_type_integer +
+        content_set +
+        any_sequence +
+        sequence +
+        set_empty
+    )
+
+    buffer = io.BytesIO()
+    buffer.write(empty_pkcs7_signature)
+    buffer.seek(0)
+
+    # Microsoft uses "2010-03-06T19:17:21Z" for all secure boot UEFI authenticated variables
+    efi_time = EfiTime(time=datetime.datetime(2010, 3, 6, 19, 17, 21))
+    auth_info2 = WinCertUefiGuid()
+
+    # Add the empty PKCS7 signature to the AUTHINFO2 structure
+    auth_info2.add_cert_data(buffer)
+
+    # Create the header for the authenticated variable
+    header = efi_time.encode() + auth_info2.encode()
+
+    # Return the header + the original secure boot efi signature list
+    return header + esl_payload
+
+
 def build_default_keys(keystore: dict) -> dict:
     """This function is used to build the default keys for secure boot.
 
@@ -253,6 +324,43 @@ useful as default on non production code provided to an OEM by an indenpendent v
 
 Please review [Microsoft's documentation](https://learn.microsoft.com/en-us/windows-hardware/manufacture/desktop/windows-secure-boot-key-creation-and-management-guidance?view=windows-11#15-keys-required-for-secure-boot-on-all-pcs)
 for more information on key requirements if appending to the defaults provided in this external dependency.
+
+## Folder Layout
+
+### Artifacts
+This folder contains the defaults in a EFI Signature List Format broken up by architecture. This format is used by the UEFI firmware to
+initialize the secure boot variables. These files are in the format described by [EFI_SIGNATURE_DATA](https://uefi.org/specs/UEFI/2.10/32_Secure_Boot_and_Driver_Signing.html?highlight=authenticated%20variable#efi-signature-data)
+
+## Artifacts/Imaging Folder
+This folder contains the defaults in a format that may be used by imaging tools during imagine (such as tools that call
+SetFirmwareVariableEx(..) like [WinPE](https://learn.microsoft.com/en-us/windows-hardware/manufacture/desktop/winpe-intro?view=windows-11))
+to initialize the secure boot variables. These files have a authenticated variable header prepended to the EFI Signature List. However the
+signature is not included. These variables are not signed but may be used to initialize the secure on systems that support this feature.
+
+The additional data appended is a empty [EFI_VARIABLE_AUTHENTICATION_2](https://uefi.org/specs/UEFI/2.10/08_Services_Runtime_Services.html?highlight=efi_time#using-the-efi-variable-authentication-2-descriptor)
+descriptor and is as follows:
+[EFI_TIME](https://uefi.org/sites/default/files/resources/UEFI_Spec_2_8_final.pdf#page=158) +
+[WIN_CERTIFICATE_UEFI_GUID](https://uefi.org/specs/UEFI/2.10/32_Secure_Boot_and_Driver_Signing.html?highlight=authenticated%20variable#win-certificate-uefi-guid) +
+[PKCS7](https://tools.ietf.org/html/rfc2315#section-9.1) +
+Data
+
+Where the PKCS7 is a empty signature with the following ASN.1 structure:
+```text
+ContentInfo SEQUENCE (4 elem)
+    contentType ContentType [?] INTEGER 1
+    content [0] [?] SET (1 elem)
+        ANY SEQUENCE (2 elem)
+            OBJECT IDENTIFIER 2.16.840.1.101.3.4.2.1 sha-256 (NIST Algorithm)
+            NULL
+    SEQUENCE (1 elem)
+        OBJECT IDENTIFIER 1.2.840.113549.1.7.1 data (PKCS #7)
+    SET (0 elem)
+```
+
+For some firmware implementations, the PK is required to be at-least self signed during the imaging process.
+However [Project Mu has a relaxed implementation](https://github.com/microsoft/mu_tiano_plus/blob/5c96768c404d1e4e32b1fea6bfd83e588c0f5d67/SecurityPkg/Library/AuthVariableLib/AuthService.c#L656C13-L656C52)
+that allows for the PK to use an empty signature.
+
 """  # noqa: E501
     for key, value in keystore.items():
         # Filter out Tables not used for the specific architecture
@@ -331,12 +439,25 @@ BOOT OBJECTS AND ANY RELATED INFORMATION."""  # noqa: E501
     return bytes(readme, "utf-8")
 
 
+def create_folder(directory: Path) -> None:
+    """Creates a folder if it does not exist.
+
+    Args:
+        directory (Path): The path to the folder to create.
+    """
+    directory.mkdir(exist_ok=True, parents=True)
+    directory.touch()
+
 def main() -> int:
     """Main entry point into the tool."""
     import argparse
     import pathlib
 
-    import tomllib
+    try:
+        import tomli as tomllib
+    except Exception:
+        import tomllib
+
 
     parser = argparse.ArgumentParser(description="Build the default keys for secure boot.")
     parser.add_argument(
@@ -364,18 +485,30 @@ def main() -> int:
         for key, value in default_keys.items():
             arch, variable = key
 
-            out_dir = Path(args.output, arch.capitalize())
+            parent = Path(args.output)
 
-            out_dir.mkdir(exist_ok=True, parents=True)
-            out_dir.touch()
+            firmware_architecture = parent / arch.capitalize()
+            create_folder(firmware_architecture)
 
-            out_file = Path(out_dir, f"{variable}.bin")
+            out_file = firmware_architecture / f"{variable}.bin"
             if out_file.exists():
                 out_file.unlink()
             with open(out_file, "wb") as f:
                 f.write(value)
 
-            readme_path = Path(out_dir, "README.md")
+            imaging_dir = parent / "Imaging"
+            create_folder(imaging_dir)
+
+            imaging_architecture = imaging_dir / arch.capitalize()
+            create_folder(imaging_architecture)
+
+            out_file = imaging_architecture / f"{variable}.bin"
+            if out_file.exists():
+                out_file.unlink()
+            with open(out_file, "wb") as f:
+                f.write(_create_time_based_payload(value))
+
+            readme_path = parent / "README.md"
             if readme_path.exists():
                 readme_path.unlink()
             with open(readme_path, "wb") as f:
