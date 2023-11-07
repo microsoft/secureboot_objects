@@ -1,4 +1,4 @@
 edk2-pytool-library==0.19.4
-edk2-pytool-extensions==0.25.1
+edk2-pytool-extensions==0.26.0
 ruff==0.1.4
 pytest==7.4.3
