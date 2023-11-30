@@ -115,6 +115,13 @@ For each file in the toml file, the script supports the following entries:
 3. `sha1 (Optional<str>)`: The sha1 hash of the file. Included in the readme
    if provided.
 
+## Code of Conduct
+
+This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/).
+
+For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/)
+or contact `opencode@microsoft.com <mailto:opencode@microsoft.com>`_. with any additional questions or comments.
+
 ## License
 
 Terms of Use for Microsoft Secure Boot Objects ("Secure Boot Objects")
