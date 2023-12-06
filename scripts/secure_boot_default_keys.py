@@ -206,7 +206,7 @@ def build_default_keys(keystore: dict) -> dict:
             signature_database = bytes()
 
             signature_owner = keystore[variable].get(
-                "signature_owner", "77fa9abd-0359-4d32-60bd-28f4e78f784b")
+                "signature_owner", DEFAULT_MS_SIGNATURE_GUID)
             files = keystore[variable]["files"]
             # The files should be handled differently depending on the file extension.
             for file_dict in files:
