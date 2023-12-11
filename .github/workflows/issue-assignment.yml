@@ -1,0 +1,21 @@
+# This workflow provides actions that should be applied when an issue is assigned.
+#
+# NOTE: This file is automatically synchronized from Mu DevOps. Update the original file there
+#       instead of the file in this repo.
+#
+# - Mu DevOps Repo: https://github.com/microsoft/mu_devops
+# - File Sync Settings: https://github.com/microsoft/mu_devops/blob/main/.sync/Files.yml
+#
+# Copyright (c) Microsoft Corporation.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+
+name: React to Issue Assignment
+
+on:
+  issues:
+    types: assigned
+
+jobs:
+  apply:
+    uses: microsoft/mu_devops/.github/workflows/IssueAssignment.yml@v9.0.1

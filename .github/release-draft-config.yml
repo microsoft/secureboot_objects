@@ -1,0 +1,98 @@
+# Defines the configuration used for drafting new releases.
+#
+# IMPORTANT: Only use labels defined in the .github/Labels.yml file in this repo.
+#
+# NOTE: `semver:major`, `semver:minor`, and `semver:patch` can be used to force that
+#       version to roll regardless of other labels.
+#
+# NOTE: This file is automatically synchronized from Mu DevOps. Update the original file there
+#       instead of the file in this repo.
+#
+# - Mu DevOps Repo: https://github.com/microsoft/mu_devops
+# - File Sync Settings: https://github.com/microsoft/mu_devops/blob/main/.sync/Files.yml
+#
+# Copyright (c) Microsoft Corporation.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+# For more information, see:
+# https://github.com/release-drafter/release-drafter
+
+name-template: 'v$RESOLVED_VERSION'
+tag-template: 'v$RESOLVED_VERSION'
+
+
+template: |
+  # What's Changed
+
+  $CHANGES
+
+  **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION
+
+categories:
+  - title: '⚠️ Breaking Changes'
+    labels:
+      - 'impact:breaking-change'
+  - title: '🚀 Features & ✨ Enhancements'
+    labels:
+      - 'type:design-change'
+      - 'type:enhancement'
+      - 'type:feature-request'
+  - title: '🐛 Bug Fixes'
+    labels:
+      - 'type:bug'
+  - title: '🔐 Security Impacting'
+    labels:
+      - 'impact:security'
+  - title: '📖 Documentation Updates'
+    labels:
+      - 'type:documentation'
+  - title: '🛠️ Submodule Updates'
+    labels:
+      - 'type:submodules'
+
+change-template: >-
+  <ul>
+    <li>
+      $TITLE @$AUTHOR (#$NUMBER)
+      <br>
+      <details>
+        <summary>Change Details</summary>
+        <blockquote>
+          <!-- Non-breaking space to have content if body is empty -->
+          &nbsp; $BODY
+        </blockquote>
+        <hr>
+      </details>
+    </li>
+  </ul>
+
+change-title-escapes: '\<*_&@' # Note: @ is added to disable mentions
+
+# Maintenance: Keep labels organized in ascending alphabetical order - easier to scan, identify duplicates, etc.
+version-resolver:
+  major:
+    labels:
+      - 'impact:breaking-change'
+      - 'semver:major'
+  minor:
+    labels:
+      - 'semver:minor'
+      - 'type:design-change'
+      - 'type:enhancement'
+      - 'type:feature-request'
+  patch:
+    labels:
+      - 'impact:non-functional'
+      - 'semver:patch'
+      - 'type:bug'
+      - 'type:documentation'
+  default: patch
+
+exclude-labels:
+  - 'type:dependabot'
+  - 'type:file-sync'
+  - 'type:notes'
+  - 'type:question'
+
+exclude-contributors:
+  - 'uefibot'
