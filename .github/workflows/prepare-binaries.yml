@@ -56,7 +56,7 @@ jobs:
       run: python scripts/secure_boot_default_keys.py --keystore keystore/keystore.toml -o Artifacts
 
     - name: Upload Binaries as Artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Binaries
         path: Artifacts/
