@@ -20,7 +20,7 @@ the Dbx to be updated transparently and then consumed by any platform!
 
 The secure boot binary objects are formatted to the expected EDKII data
 structures to enable simple integration into an EDKII platform. Please refer to
-[SecureBootKeyStoreLibOem](https://github.com/microsoft/mu_oem_sample/tree/release/202302/OemPkg/Library/SecureBootKeyStoreLibOem)
+[SecureBootKeyStoreLib](https://github.com/microsoft/mu_plus/tree/HEAD/MsCorePkg/Library/BaseSecureBootKeyStoreLib)
 to see one example on how to easily integrate these binaries into your
 platform. The EDKII build system even supports easily appending to the default
 values suggested by Microsoft!
