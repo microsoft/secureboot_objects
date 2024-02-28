@@ -18,7 +18,9 @@ from edk2toollib.uefi.authenticated_variables_structure_support import (
     EfiSignatureList,
 )
 
-DEFAULT_MS_SIGNATURE_GUID = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
+# Random UUID used as the signature owner if none is provided.
+INSTANCE_SIGNATURE_OWNER = str(uuid.uuid4())
+
 ARCH_MAP = {"64-bit": "x64", "32-bit": "ia32", "32-bit ARM": "arm", "64-bit ARM": "aarch64"}
 
 
@@ -76,7 +78,7 @@ def _invalid_file(file: str, **kwargs: any) -> None:
     raise ValueError(f"Invalid filetype for conversion: {file}")
 
 
-def _convert_crt_to_signature_list(file: str, signature_owner: str = DEFAULT_MS_SIGNATURE_GUID, **kwargs: any) -> bytes:
+def _convert_crt_to_signature_list(file: str, signature_owner: str, **kwargs: any) -> bytes:
     """This function converts a single crt file to a signature list.
 
     Args:
@@ -111,9 +113,7 @@ def _convert_crt_to_signature_list(file: str, signature_owner: str = DEFAULT_MS_
     return siglist.encode()
 
 
-def _convert_csv_to_signature_list(
-    file: str, signature_owner: str = DEFAULT_MS_SIGNATURE_GUID, target_arch: str = None, **kwargs: any
-) -> bytes:
+def _convert_csv_to_signature_list(file: str, signature_owner: str, target_arch: str = None, **kwargs: any) -> bytes:
     """This function is used to handle the csv files.
 
     This function expects to be given a csv file with the following format:
@@ -193,13 +193,21 @@ def build_default_keys(keystore: dict) -> dict:
             # The signature database is a byte array that will be added to the default keys.
             signature_database = bytes()
 
-            signature_owner = keystore[variable].get("signature_owner", DEFAULT_MS_SIGNATURE_GUID)
             files = keystore[variable]["files"]
             # The files should be handled differently depending on the file extension.
             for file_dict in files:
                 # Get the file extension.\
                 file_path = Path(file_dict["path"])
                 file_ext = file_path.suffix.lower()
+
+                signature_owner = file_dict.get("signature_owner", None)
+                if signature_owner is None:
+                    signature_owner = INSTANCE_SIGNATURE_OWNER
+                    logging.warning(
+                        "No signature owner provided for %s. Using random signature owner %s.",
+                        file_path,
+                        signature_owner,
+                    )
 
                 convert_handler = file_handler.get(file_ext, _invalid_file)
 
