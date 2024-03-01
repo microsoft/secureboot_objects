@@ -18,13 +18,11 @@ from edk2toollib.uefi.authenticated_variables_structure_support import (
     EfiSignatureList,
 )
 
-DEFAULT_MS_SIGNATURE_GUID = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
-ARCH_MAP = {
-    "64-bit": "x64",
-    "32-bit": "ia32",
-    "32-bit ARM": "arm",
-    "64-bit ARM": "aarch64"
-}
+# Random UUID used as the signature owner if none is provided.
+INSTANCE_SIGNATURE_OWNER = str(uuid.uuid4())
+
+ARCH_MAP = {"64-bit": "x64", "32-bit": "ia32", "32-bit ARM": "arm", "64-bit ARM": "aarch64"}
+
 
 def _is_pem_encoded(certificate_data: Union[str, bytes]) -> bool:
     """This function is used to check if a certificate is pem encoded (base64 encoded).
@@ -38,7 +36,7 @@ def _is_pem_encoded(certificate_data: Union[str, bytes]) -> bool:
     try:
         if isinstance(certificate_data, str):
             # If there's any unicode here, an exception will be thrown and the function will return false
-            sb_bytes = bytes(certificate_data, 'ascii')
+            sb_bytes = bytes(certificate_data, "ascii")
         elif isinstance(certificate_data, bytes):
             sb_bytes = certificate_data
         else:
@@ -46,7 +44,8 @@ def _is_pem_encoded(certificate_data: Union[str, bytes]) -> bool:
 
         return base64.b64encode(base64.b64decode(sb_bytes)) == sb_bytes
     except Exception:
-            return False
+        return False
+
 
 def _convert_pem_to_der(certificate_data: Union[str, bytes]) -> bytes:
     """This function is used to convert a pem encoded certificate to a der encoded certificate.
@@ -59,9 +58,10 @@ def _convert_pem_to_der(certificate_data: Union[str, bytes]) -> bytes:
     """
     if isinstance(certificate_data, str):
         # If there's any unicode here, an exception will be thrown and the function will return false
-        certificate_data = bytes(certificate_data, 'ascii')
+        certificate_data = bytes(certificate_data, "ascii")
 
     return base64.b64decode(certificate_data)
+
 
 def _invalid_file(file: str, **kwargs: any) -> None:
     """This function is used to handle invalid filetypes.
@@ -78,7 +78,7 @@ def _invalid_file(file: str, **kwargs: any) -> None:
     raise ValueError(f"Invalid filetype for conversion: {file}")
 
 
-def _convert_crt_to_signature_list(file: str, signature_owner: str=DEFAULT_MS_SIGNATURE_GUID, **kwargs: any) -> bytes:
+def _convert_crt_to_signature_list(file: str, signature_owner: str, **kwargs: any) -> bytes:
     """This function converts a single crt file to a signature list.
 
     Args:
@@ -94,11 +94,9 @@ def _convert_crt_to_signature_list(file: str, signature_owner: str=DEFAULT_MS_SI
     if signature_owner is not None and not isinstance(signature_owner, uuid.UUID):
         signature_owner = uuid.UUID(signature_owner)
 
-    siglist = EfiSignatureList(
-        typeguid=EfiSignatureDataFactory.EFI_CERT_X509_GUID)
+    siglist = EfiSignatureList(typeguid=EfiSignatureDataFactory.EFI_CERT_X509_GUID)
 
     with open(file, "rb") as crt_file, TemporaryFile() as temp_file:
-
         certificate = crt_file.read()
         if _is_pem_encoded(certificate):
             certificate = _convert_pem_to_der(certificate)
@@ -106,10 +104,7 @@ def _convert_crt_to_signature_list(file: str, signature_owner: str=DEFAULT_MS_SI
         temp_file.write(certificate)
         temp_file.seek(0)
 
-        sigdata = EfiSignatureDataFactory.create(
-            EfiSignatureDataFactory.EFI_CERT_X509_GUID,
-            temp_file,
-            signature_owner)
+        sigdata = EfiSignatureDataFactory.create(EfiSignatureDataFactory.EFI_CERT_X509_GUID, temp_file, signature_owner)
 
         # X.509 certificates are variable size, so they must be contained in their own signature list
         siglist.AddSignatureHeader(None, SigSize=sigdata.get_total_size())
@@ -118,12 +113,7 @@ def _convert_crt_to_signature_list(file: str, signature_owner: str=DEFAULT_MS_SI
     return siglist.encode()
 
 
-def _convert_csv_to_signature_list(
-    file: str,
-    signature_owner: str=DEFAULT_MS_SIGNATURE_GUID,
-    target_arch:str=None,
-    **kwargs: any
-) -> bytes:
+def _convert_csv_to_signature_list(file: str, signature_owner: str, target_arch: str = None, **kwargs: any) -> bytes:
     """This function is used to handle the csv files.
 
     This function expects to be given a csv file with the following format:
@@ -145,15 +135,13 @@ def _convert_csv_to_signature_list(
     if signature_owner is not None and not isinstance(signature_owner, uuid.UUID):
         signature_owner = uuid.UUID(signature_owner)
 
-    siglist = EfiSignatureList(
-        typeguid=EfiSignatureDataFactory.EFI_CERT_SHA256_GUID)
+    siglist = EfiSignatureList(typeguid=EfiSignatureDataFactory.EFI_CERT_SHA256_GUID)
 
     with open(file, "r") as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=",")
         for i, row in enumerate(csv_reader):
             if i == 0:
-                siglist.AddSignatureHeader(
-                    None, SigSize=EfiSignatureDataEfiCertSha256.STATIC_STRUCT_SIZE)
+                siglist.AddSignatureHeader(None, SigSize=EfiSignatureDataEfiCertSha256.STATIC_STRUCT_SIZE)
                 continue
 
             authenticode_hash = row[1]
@@ -166,7 +154,8 @@ def _convert_csv_to_signature_list(
                 continue
 
             sigdata = EfiSignatureDataEfiCertSha256(
-                None, None, bytearray.fromhex(authenticode_hash), sigowner = signature_owner)
+                None, None, bytearray.fromhex(authenticode_hash), sigowner=signature_owner
+            )
             siglist.AddSignatureData(sigdata)
 
     return siglist.encode()
@@ -189,14 +178,13 @@ def build_default_keys(keystore: dict) -> dict:
     # Add handlers here for different file types.
     file_handler = {
         ".crt": _convert_crt_to_signature_list,
-        ".der": _convert_crt_to_signature_list, # DER is just a more specific certificate format than CRT
-        '.csv': _convert_csv_to_signature_list
+        ".der": _convert_crt_to_signature_list,  # DER is just a more specific certificate format than CRT
+        ".csv": _convert_csv_to_signature_list,
     }
 
     # The json file should be a list of signatures including the owner of the signature.
     for variable in keystore:
         for arch in set(ARCH_MAP.values()):
-
             # Skip generating this blob if arch is specified and it does not match
             if keystore[variable].get("arch", arch) != arch:
                 logging.debug(f"Skipping {variable} for {arch} due to config file settings.")
@@ -205,8 +193,6 @@ def build_default_keys(keystore: dict) -> dict:
             # The signature database is a byte array that will be added to the default keys.
             signature_database = bytes()
 
-            signature_owner = keystore[variable].get(
-                "signature_owner", DEFAULT_MS_SIGNATURE_GUID)
             files = keystore[variable]["files"]
             # The files should be handled differently depending on the file extension.
             for file_dict in files:
@@ -214,24 +200,29 @@ def build_default_keys(keystore: dict) -> dict:
                 file_path = Path(file_dict["path"])
                 file_ext = file_path.suffix.lower()
 
+                signature_owner = file_dict.get("signature_owner", None)
+                if signature_owner is None:
+                    signature_owner = INSTANCE_SIGNATURE_OWNER
+                    logging.warning(
+                        "No signature owner provided for %s. Using random signature owner %s.",
+                        file_path,
+                        signature_owner,
+                    )
+
                 convert_handler = file_handler.get(file_ext, _invalid_file)
 
                 logging.info("Converting %s to signature list.", file_path)
 
-                signature_database += convert_handler(
-                    file=file_path,
-                    signature_owner=signature_owner,
-                    target_arch=arch
-                )
+                signature_database += convert_handler(file=file_path, signature_owner=signature_owner, target_arch=arch)
 
-                logging.info(
-                    "Appended %s to signature database for variable %s.", file_path, variable)
+                logging.info("Appended %s to signature database for variable %s.", file_path, variable)
 
             default_keys[arch, variable] = signature_database
 
             logging.debug("Signature Database for %s:", variable)
 
     return default_keys
+
 
 def create_readme(keystore: dict, arch: str) -> str:
     """Generates a README.md file for a given architecture.
@@ -262,9 +253,8 @@ useful as default on non production code provided to an OEM by an indenpendent v
 
 Please review [Microsoft's documentation](https://learn.microsoft.com/en-us/windows-hardware/manufacture/desktop/windows-secure-boot-key-creation-and-management-guidance?view=windows-11#15-keys-required-for-secure-boot-on-all-pcs)
 for more information on key requirements if appending to the defaults provided in this external dependency.
-""" # noqa: E501
+"""  # noqa: E501
     for key, value in keystore.items():
-
         # Filter out Tables not used for the specific architecture
         if keystore[key].get("arch", arch) != arch:
             logging.debug(f"Skipping {key} for {arch} due to config file settings.")
@@ -334,11 +324,12 @@ YOU AGREE TO RELEASE MICROSOFT (INCLUDING ITS AFFLIATES, CONTRACTORS, AGENTS,
 EMPLOYEES, LICENSEES AND ASSIGNEES) AND UEFI (INCLUDING ITS AFFILIATES,
 CONTRACTORS, AGENTS, EMPLOYEES, LICENSEES AND SUCCESSORS) FROM ANY AND ALL
 CLAIMS OR LIABILITY ARISING OUT OF YOUR USE OR DISTRIBUTION OF THE SECURE
-BOOT OBJECTS AND ANY RELATED INFORMATION.""" # noqa: E501
+BOOT OBJECTS AND ANY RELATED INFORMATION."""  # noqa: E501
 
     readme += "\n"
 
     return bytes(readme, "utf-8")
+
 
 def main() -> int:
     """Main entry point into the tool."""
@@ -347,12 +338,20 @@ def main() -> int:
 
     import tomllib
 
-    parser = argparse.ArgumentParser(
-        description="Build the default keys for secure boot.")
-    parser.add_argument("--keystore", help="A json file containing the keys mapped to certificates and hashes.",
-                        default="keystore.toml", required=True)
-    parser.add_argument("-o", "--output", type=pathlib.Path, default=pathlib.Path.cwd() / "Artifacts",
-                        help="The output directory for the default keys.")
+    parser = argparse.ArgumentParser(description="Build the default keys for secure boot.")
+    parser.add_argument(
+        "--keystore",
+        help="A json file containing the keys mapped to certificates and hashes.",
+        default="keystore.toml",
+        required=True,
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        type=pathlib.Path,
+        default=pathlib.Path.cwd() / "Artifacts",
+        help="The output directory for the default keys.",
+    )
 
     args = parser.parse_args()
 
@@ -382,6 +381,7 @@ def main() -> int:
             with open(readme_path, "wb") as f:
                 f.write(create_readme(keystore, arch))
     return 0
+
 
 def _split_text_by_length(text: str, max_length: int = 120) -> str:
     """Inserts newline characters into text to ensure that no line is longer than max_length.
@@ -413,6 +413,6 @@ def _split_text_by_length(text: str, max_length: int = 120) -> str:
 
 if __name__ == "__main__":
     import sys
-    logging.basicConfig(level=logging.INFO,
-                        format="%(levelname)s: %(message)s")
+
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
     sys.exit(main())
