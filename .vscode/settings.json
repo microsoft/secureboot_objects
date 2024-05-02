@@ -2,7 +2,7 @@
   "[python]": {
     "editor.defaultFormatter": null,
     "editor.codeActionsOnSave": {
-      "source.fixAll.ruff": true
+      "source.fixAll.ruff": "explicit"
     }
   },
   "python.testing.pytestArgs": [
