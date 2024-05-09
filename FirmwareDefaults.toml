@@ -1,11 +1,11 @@
 # @file
 ##
-# Configuration for building authenticated variables
+# Configuration for building EFI Signature Lists for UEFI Secure Boot
 #
-# This file will generate the authenticated variables for the UEFI Secure Boot
+# This file will generate the EFI Signature Lists for the UEFI Secure Boot
 # following https://uefi.org/specs/UEFI/2.9_A/32_Secure_Boot_and_Driver_Signing.html#signature-database
 #
-# The authenticated variables are used to store the signature database in the UEFI
+# The Signature Lists are used to store the signature database in the UEFI
 # Each entry must have a "SignatureOwner" GUID. While the GUID is not required to be unique,
 # the Microsoft HLK test will fail if the GUID overlaps with the Microsoft GUID.
 # It is recommended to use your own GUID for the SignatureOwner.
@@ -27,7 +27,7 @@
 # #pragma pack()
 #
 # Each Variable may contain multiple EFI_SIGNATURE_LISTs, each with a different SignatureType.
-# Following is the structure of the authenticated variables:
+# Following is the structure of a EFI Signature List:
 #
 #                             ---┌─────────────────────────┐
 #                            /   │  SIGNATURE LIST HEADER  │
