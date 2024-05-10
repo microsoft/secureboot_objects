@@ -3,7 +3,7 @@
 This repository is used to hold the secure boot objects recommended by
 Microsoft to use as the default KEK, DB, and DBX variables. This repository
 utilizes a script (`scripts/secure_boot_default_keys.py`) to generate the
-binary blobs based off of the `keystore.toml` configuration file.
+binary blobs based off of the `FirmwareDefaults.toml` configuration file.
 
 On a release github release, the script is run and the generated binaries are
 bundled, zipped, and attached to the release so that they can be consumed by
