@@ -140,7 +140,7 @@ signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
 help = "Contains a list of revoked certificates that will not execute on this system. Filtered per Architecture (ARM, Intel)."
 
 [[DefaultDbx.files]]
-path = "PreSignedObjects/DBX/Hashes/dbx_info_uefi_org_7_18_23.csv"
+path = "PreSignedObjects/DBX/Hashes/dbx_info_msft_4_09_24.csv"
 url = "https://uefi.org/sites/default/files/resources/dbx_info.csv"
 sha1 = 0x501379f1564a6bfc08e1e584767501bae9fd8907
 signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
