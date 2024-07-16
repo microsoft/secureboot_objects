@@ -1,4 +1,4 @@
-# Contents of the Signed Folder
+# Contents of the PostSigned Folder
 The `PostSignedObjects` folder of the Secureboot objects repo contains the Microsoft KEK signed version of the secure boot objects' contents that are recommended by Microsoft to set as the default DB and DBX variables, as well as the Microsoft KEK and PK. 
 The DBX folder contains the list of revoked 3rd party UEFI applications. The bin folder contains the signed DB and DBX update packages and is broken down into subsections based on device architecture. The contents of the signed DBX folder should match the contents of the DBX folder in the Keystore folder. Please note, DB and DBX update packages generated from the keystore folder are unsigned by the Microsoft KEK.
 
