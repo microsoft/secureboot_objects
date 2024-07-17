@@ -1,7 +1,5 @@
 **/*.zip
 **/*.tar.gz
-**/*.bin
-**/README.md
 Pipfile
 .ruff_cache/*
 Artifacts/*
