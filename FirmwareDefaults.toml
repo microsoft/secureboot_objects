@@ -133,6 +133,12 @@ url = "https://go.microsoft.com/fwlink/?linkid=2239872"
 sha1 = 0xb5eeb4a6706048073f0ed296e7f580a790b59eaa
 signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
 
+[[Default3PDb.files]]
+path = "PreSignedObjects/DB/Certificates/microsoft option rom uefi ca 2023.der"
+url = "http://www.microsoft.com/pkiops/certs/microsoft%20option%20rom%20uefi%20ca%202023.crt"
+sha1 = 0x3FB39E2B8BD183BF9E4594E72183CA60AFCD4277
+signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
+
 ############################
 # Default Dbx File Entries #
 ############################
