@@ -8,6 +8,7 @@ import base64
 import csv
 import datetime
 import io
+import json
 import logging
 import uuid
 from pathlib import Path
@@ -166,6 +167,71 @@ def _convert_csv_to_signature_list(file: str, signature_owner: str, target_arch:
     return siglist.encode()
 
 
+
+
+def _convert_json_to_signature_list(file: str, signature_owner: str, target_arch: str = None, **kwargs: any) -> bytes:
+    """Converts a JSON file containing image hashes to an EFI signature list.
+
+    Args:
+        file (str): The path to the JSON file containing the image hashes.
+        signature_owner (str): The UUID of the signature owner. If not a UUID instance, it will be converted.
+        target_arch (str, optional): The target architecture to filter the hashes. Defaults to None.
+        **kwargs (any): Additional keyword arguments.
+
+    Returns:
+        bytes: The encoded EFI signature list.
+
+    Raises:
+        ValueError: If the hash type in the JSON file is not 'SHA256'.
+    Example JSON format:
+        {
+            "images": {
+                "x64": [
+                    {
+                        "authenticodeHash": "80B4D96931BF0D02FD91A61E19D14F1DA452E66DB2408CA8604D411F92659F0A",
+                        "hashType": "SHA256",
+                        "flatHash": "",
+                        "filename": "shim.efi",
+                        "description": "",
+                        "companyName": "Unknown",
+                        "dateOfAddition": "2018-04-01",
+                        "signingAuthority": "CN = Microsoft Corporation UEFI CA 2011"
+                    }
+                ]
+            }
+        }
+    """
+    if signature_owner is not None and not isinstance(signature_owner, uuid.UUID):
+        signature_owner = uuid.UUID(signature_owner)
+
+    siglist = EfiSignatureList(typeguid=EfiSignatureDataFactory.EFI_CERT_SHA256_GUID)
+    siglist.AddSignatureHeader(None, SigSize=EfiSignatureDataEfiCertSha256.STATIC_STRUCT_SIZE)
+
+    with open(file, "r") as json_file:
+        data = json.load(json_file)
+
+        hashes = data["images"]
+        for arch in hashes:
+            if target_arch is not None and arch != target_arch:
+                logging.debug(f"Skipping {arch} because it is not in the target architectures.")
+                continue
+
+            for hash in hashes[arch]:
+                authenticode_hash = hash["authenticodeHash"]
+
+                # Check if the hash type is SHA256
+                # This may be expanded in the future to support other hash types
+                if hash["hashType"] != "SHA256":
+                    raise ValueError(f"Invalid hash type: {hash['hashType']}")
+
+                sigdata = EfiSignatureDataEfiCertSha256(
+                    None, None, bytearray.fromhex(authenticode_hash), sigowner=signature_owner
+                )
+
+                siglist.AddSignatureData(sigdata)
+
+    return siglist.encode()
+
 def _create_time_based_payload(esl_payload: bytes) -> bytes:
     """This function creates a authenticated variable with an empty signature for the provided payload.
 
@@ -251,6 +317,7 @@ def build_default_keys(keystore: dict) -> dict:
         ".crt": _convert_crt_to_signature_list,
         ".der": _convert_crt_to_signature_list,  # DER is just a more specific certificate format than CRT
         ".csv": _convert_csv_to_signature_list,
+        ".json": _convert_json_to_signature_list,
     }
 
     # The json file should be a list of signatures including the owner of the signature.
@@ -546,6 +613,7 @@ def _split_text_by_length(text: str, max_length: int = 120) -> str:
 
 if __name__ == "__main__":
     import sys
+
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
     sys.exit(main())
