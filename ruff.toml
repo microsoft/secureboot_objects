@@ -1,4 +1,4 @@
-select = [
+lint.select = [
     "E", # Pycodestyle errors
     "W", # Pycodestyle warnings
     "F", # PyFlakes
@@ -10,4 +10,4 @@ select = [
 
 line-length = 120
 
-pydocstyle.convention = "google"
+lint.pydocstyle.convention = "google"
