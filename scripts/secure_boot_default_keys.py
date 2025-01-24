@@ -462,8 +462,8 @@ property in any Microsoft product.
 You may copy and use the Secure Boot Objects for your internal, reference
 purposes and to design, develop, and test your software, firmware or hardware,
 as applicable; and you may distribute the Secure Boot Objects to end users
-solely as part of the distribution of an operating system software product, or
-as part of the distribution of updates to an operating system software product;
+solely as part of the distribution of a software product, or
+as part of the distribution of updates to a software product;
 and you may distribute the Secure Boot Objects to end users or through your
 distribution channels solely as embodied in a firmware product or hardware
 product that embodies nontrivial additional functionality. Without limiting the
@@ -476,8 +476,8 @@ products that include the UEFI standard
 (available at https://uefi.org/specifications), you may copy and use the Secure
 Boot Objects for your internal, reference purposes and to design, develop, and
 test your software; and you may distribute the Secure Boot Objects end users
-solely as part of the distribution of an operating system software product, or
-as part of the distribution of updates to an operating system software product.
+solely as part of the distribution of a software product, or
+as part of the distribution of updates to a software product.
 Without limiting the foregoing, copying or reproduction of the Secure Boot
 Objects to any other server or location for further reproduction or
 redistribution on a standalone basis is expressly prohibited.
