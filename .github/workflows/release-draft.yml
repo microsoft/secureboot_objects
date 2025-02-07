@@ -33,5 +33,5 @@ jobs:
       contents: write
       pull-requests: write
 
-    uses: microsoft/mu_devops/.github/workflows/ReleaseDrafter.yml@v12.4.0
+    uses: microsoft/mu_devops/.github/workflows/ReleaseDrafter.yml@v13.0.0
     secrets: inherit
