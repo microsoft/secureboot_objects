@@ -26,7 +26,7 @@ def main() -> int:
                         help="The directory containing the files to be Prepared.")
     parser.add_argument("--version", required=True,
                         help="The version number of the release.")
-    parser.add_argument("-o","--output", default="Archives", type = pathlib.Path,
+    parser.add_argument("-o","--output", default="FirmwareArchive", type = pathlib.Path,
                         help="The output directory for prepared files.")
     args = parser.parse_args()
 

@@ -11,7 +11,7 @@ import shutil
 import sys
 import tempfile
 
-import prepare
+import scripts.prepare_firmware_binaries as prepare_firmware_binaries
 
 
 def test_layout(tmpdir: pathlib.Path) -> None:
@@ -41,7 +41,7 @@ def test_layout(tmpdir: pathlib.Path) -> None:
         "-o",
         str(tmpdir / OUT_FILE),
     ]
-    prepare.main()
+    prepare_firmware_binaries.main()
 
     zip_file_list = list(pathlib.Path(tmpdir / OUT_FILE).glob("*"))
 

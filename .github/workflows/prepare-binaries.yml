@@ -53,21 +53,32 @@ jobs:
       run: pytest scripts/
 
     - name: Build Intel / ARM Binaries
-      run: python scripts/secure_boot_default_keys.py --keystore FirmwareDefaults.toml -o Artifacts
+      run: python scripts/secure_boot_default_keys.py --keystore FirmwareDefaults.toml -o FirmwareArtifacts
 
-    - name: Upload Binaries as Artifact
+    - name: Upload Fiwmare Binaries as Artifacts
       uses: actions/upload-artifact@v4
       with:
         name: Binaries
-        path: Artifacts/
+        path: FirmwareArtifacts/
 
-    - name: Prepare Release Artifacts
-      run: python scripts/prepare.py Artifacts --output ReleaseArtifacts --version ${{ github.event.release.tag_name }}
+    - name: Prepare Release Firmware Archive
+      run: python scripts/prepare_firmware_binaries.py FirmwareArtifacts --output ReleaseFirmwareArchive --version ${{ github.event.release.tag_name }}
       if: startsWith(github.ref, 'refs/tags/')
 
-    - name: Upload Release Artifacts
+    - name: Upload Firmware Release Archive
       uses: softprops/action-gh-release@v2
-      if: startsWith(github.ref, 'refs/tags/')
+      if: startsWith(github.ref, 'refs/tags/') && !endsWith(github.event.release.tag_name, '-signed')
       with:
-        files: ReleaseArtifacts/*
+        files: ReleaseFirmwareArchive/*
+        token: ${{ secrets.GH_UEFI_BOT_PUBLISH_TOKEN }}
+
+    - name: Prepare Release Signed Archive
+      run: python scripts/prepare_signed_binaries.py PostSignedObjects --output ReleaseSignedArtifacts --version ${{ github.event.release.tag_name }}
+      if: startsWith(github.ref, 'refs/tags/')
+
+    - name: Upload Signed Release Archive
+      uses: softprops/action-gh-release@v2
+      if: startsWith(github.ref, 'refs/tags/') && endsWith(github.event.release.tag_name, '-signed')
+      with:
+        files: ReleaseSignedArtifacts/*
         token: ${{ secrets.GH_UEFI_BOT_PUBLISH_TOKEN }}
