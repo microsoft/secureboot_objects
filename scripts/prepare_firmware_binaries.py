@@ -16,7 +16,11 @@ LAYOUT = {
     "edk2-aarch64-secureboot-binaries": "Aarch64",
     "edk2-ia32-secureboot-binaries": "Ia32",
     "edk2-x64-secureboot-binaries": "X64",
+    "edk2-Imaging-secureboot-binaries": "Imaging",
 }
+
+INFORMATION = (pathlib.Path(__file__).parent / "information" / "firmware_binaries_information.md").read_text()
+LICENSE = (pathlib.Path(__file__).parent / "information" / "prebuilt_binaries_license.md").read_text()
 
 def main() -> int:
     """Entry point for the script."""
@@ -38,6 +42,14 @@ def main() -> int:
         if file_path.is_file():
             file_path.unlink()
 
+    readme = ""
+    readme += INFORMATION
+    readme += '\n\n' + "-" * 80 + "\n\n"
+    readme += LICENSE
+
+    readme_path = out_path / "README.md"
+    readme_path.write_text(readme)
+
     for name, arch in LAYOUT.items():
         tmp_dir = tempfile.TemporaryDirectory()
         pathlib.Path(tmp_dir.name, "version").write_text(args.version)
@@ -48,6 +60,7 @@ def main() -> int:
         shutil.make_archive(out_path / name, "zip", tmp_dir.name)
         shutil.make_archive(out_path / name, "gztar", tmp_dir.name)
 
+        logging.info(f"Created archives for {name} in {out_path}")
 
 if __name__ == "__main__":
 

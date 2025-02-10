@@ -11,50 +11,8 @@ import shutil
 import sys
 import tempfile
 
-INSTRUCTIONS = r"""
-# Information
-
-Most users should depend on the Operating system to update the Secure Boot Signatures as otherwise the
-system will not boot. In a best case scenario, the system will boot but the user will be presented with
-a EFI_SECURIT_VIOLATION error message. Doing this out of band may effect cause security enforcement
-tools (such as BitLocker) to fail to boot the system.
-
-Advanced Users who are familiar with the UEFI Secure Boot process can use these binaries to update the
-Secure Boot Signatures on their system.
-
-## edk2-2011-signed-secureboot-binaries
-
-Background:
-    - These binaries are signed with a leaf certificate of the Microsoft UEFI CA 2011 KEK.
-    - These binaries should be used for systems that trust the Microsoft UEFI CA 2011 KEK certificate
-    - These binaries hashes are broken up by architecture
-        - X64
-        - Ia32
-        - Arm
-        - Aarch64
-    - Purely hash based revocations. These do not contain the 2011 Windows CA nor do they contain SVNs.
-    - These binaries are the most compatible with the most systems consult the
-    `PreSignedObjects\DBX\dbx_info_msft_<date>.json` file for more information.
-
-## edk2-2011-optional-signed-secureboot-binaries
-
-Background:
-    - These binaries are considered optional because the ecosystem is undergoing a transition to new
-    certificates. Not all platforms can be updated yet without a firmware update.
-    - If a platform does take these optional updates, they will be unable to boot existing Windows boot
-    media. More information to follow.
-    - These binaries are signed with a leaf certificate of the Microsoft UEFI CA 2011 KEK.
-    - These binaries should be used for systems that trust the Microsoft UEFI CA 2011 KEK certificate
-    - They are broken up by:
-        - DB
-            - `DBUpdate2024` Contains a 2011 MSFT KEK Signed 2023 Windows CA DB update
-        - DBX
-            -  `DBXUpdate2024.bin` Contains a 2011 MSFT KEK Signed revocation that revokes 2011
-            Windows CA and SVNs
-            - `DBXUpdateSVN` Contains a 2011 MSFT KEK Signed revocation of SVNs
-    - These binaries are the lease compatible and will break existing Windows boot media. Consult the
-    `PreSignedObjects\DBX\dbx_info_msft_<date>.json` file for more information.
-"""
+INFORMATION = (pathlib.Path(__file__).parent / "information" / "signed_binaries_information.md").read_text()
+LICENSE = (pathlib.Path(__file__).parent / "information" / "prebuilt_binaries_license.md").read_text()
 
 LAYOUT = {
     "edk2-2011-signed-secureboot-binaries": "DBX",
@@ -81,8 +39,13 @@ def main() -> int:
         if file_path.is_file():
             file_path.unlink()
 
+    readme = ""
+    readme += INFORMATION
+    readme += '\n\n' + "-" * 80 + "\n\n"
+    readme += LICENSE
+
     readme_path = out_path / "README.md"
-    readme_path.write_text(INSTRUCTIONS)
+    readme_path.write_text(readme)
 
     for name, arch in LAYOUT.items():
         tmp_dir = tempfile.TemporaryDirectory()
@@ -93,6 +56,8 @@ def main() -> int:
 
         shutil.make_archive(out_path / name, "zip", tmp_dir.name)
         shutil.make_archive(out_path / name, "gztar", tmp_dir.name)
+
+        logging.info(f"Created archives for {name} in {out_path}")
 
 
 if __name__ == "__main__":
