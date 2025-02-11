@@ -11,7 +11,7 @@ import shutil
 import sys
 import tempfile
 
-import scripts.prepare_firmware_binaries as prepare_firmware_binaries
+import prepare_firmware_binaries as prepare_firmware_binaries
 
 
 def test_layout(tmpdir: pathlib.Path) -> None:
@@ -22,7 +22,7 @@ def test_layout(tmpdir: pathlib.Path) -> None:
     artifacts = pathlib.Path(tmpdir / IN_FILE)
     artifacts.mkdir()
 
-    folder_list = ["Arm", "Aarch64", "Ia32", "X64"]
+    folder_list = ["Arm", "Aarch64", "Ia32", "X64", "Imaging"]
     file_list = ["Default3PDb.bin", "DefaultDb.bin", "DefaultDbx.bin", "DefaultKEK.bin", "DefaultPK.bin", "README.md"]
 
     for folder in folder_list:
@@ -45,9 +45,12 @@ def test_layout(tmpdir: pathlib.Path) -> None:
 
     zip_file_list = list(pathlib.Path(tmpdir / OUT_FILE).glob("*"))
 
-    assert len(zip_file_list) == 8
+    assert len(zip_file_list) == 11
 
     for file in zip_file_list:
+        if file.suffix == ".md":
+            continue
+
         with tempfile.TemporaryDirectory() as temp_unzip_dir:
             shutil.unpack_archive(file, temp_unzip_dir)
 
