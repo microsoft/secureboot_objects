@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: BSD-2-Clause-Patent
 ##
 """A command line script to prepare the files generated from secure_boot_default_keys.py for a github release."""
+
 import argparse
 import logging
 import pathlib
@@ -22,16 +23,15 @@ LAYOUT = {
 INFORMATION = (pathlib.Path(__file__).parent / "information" / "firmware_binaries_information.md").read_text()
 LICENSE = (pathlib.Path(__file__).parent / "information" / "prebuilt_binaries_license.md").read_text()
 
+
 def main() -> int:
     """Entry point for the script."""
-    parser = argparse.ArgumentParser(
-        description="Organizes and zips the files for a release.")
-    parser.add_argument("input", type=pathlib.Path,
-                        help="The directory containing the files to be Prepared.")
-    parser.add_argument("--version", required=True,
-                        help="The version number of the release.")
-    parser.add_argument("-o","--output", default="FirmwareArchive", type = pathlib.Path,
-                        help="The output directory for prepared files.")
+    parser = argparse.ArgumentParser(description="Organizes and zips the files for a release.")
+    parser.add_argument("input", type=pathlib.Path, help="The directory containing the files to be Prepared.")
+    parser.add_argument("--version", required=True, help="The version number of the release.")
+    parser.add_argument(
+        "-o", "--output", default="FirmwareArchive", type=pathlib.Path, help="The output directory for prepared files."
+    )
     args = parser.parse_args()
 
     out_path = args.output
@@ -44,7 +44,7 @@ def main() -> int:
 
     readme = ""
     readme += INFORMATION
-    readme += '\n\n' + "-" * 80 + "\n\n"
+    readme += "\n\n" + "-" * 80 + "\n\n"
     readme += LICENSE
 
     readme_path = out_path / "README.md"
@@ -62,8 +62,7 @@ def main() -> int:
 
         logging.info(f"Created archives for {name} in {out_path}")
 
-if __name__ == "__main__":
 
-    logging.basicConfig(level=logging.INFO,
-                        format="%(levelname)s: %(message)s")
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
     sys.exit(main())
