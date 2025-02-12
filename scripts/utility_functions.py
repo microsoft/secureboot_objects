@@ -1,3 +1,8 @@
+# @file
+#
+# Copyright (c) Microsoft Corporation.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+##
 """This module provides utility functions and classes for handling secure boot objects.
 
 including SVN data, signature databases, and secure boot payloads.

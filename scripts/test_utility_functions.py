@@ -1,3 +1,8 @@
+# @file
+#
+# Copyright (c) Microsoft Corporation.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+##
 """Test the utility functions.
 
 This module contains unit tests for the utility functions used in the project.
