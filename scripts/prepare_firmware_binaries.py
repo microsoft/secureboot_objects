@@ -6,14 +6,11 @@
 """A command line script to prepare the files generated from secure_boot_default_keys.py for a github release."""
 
 import argparse
-import json
 import logging
 import pathlib
 import shutil
 import sys
 import tempfile
-
-from utility_functions import get_unsigned_payload_receipt
 
 LAYOUT = {
     "edk2-arm-secureboot-binaries": "Arm",
@@ -59,13 +56,6 @@ def main() -> int:
         if not (in_path / arch).exists():
             raise RuntimeError(f"Missing {arch} directory in {in_path}")
         shutil.copytree(in_path / arch, pathlib.Path(tmp_dir.name), dirs_exist_ok=True)
-
-        tmp_path = pathlib.Path(tmp_dir.name)
-        for bin_file in tmp_path.rglob("*.bin"):
-            receipt = get_unsigned_payload_receipt(bin_file)
-            receipt_json = json.dumps(receipt, indent=4)
-            receipt_path = bin_file.with_suffix('.json')
-            receipt_path.write_text(receipt_json)
 
         shutil.make_archive(out_path / name, "zip", tmp_dir.name)
         shutil.make_archive(out_path / name, "gztar", tmp_dir.name)
