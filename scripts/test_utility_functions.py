@@ -1,3 +1,7 @@
+"""Test the utility functions.
+
+This module contains unit tests for the utility functions used in the project.
+"""
 import json
 import pathlib
 import tempfile
@@ -5,7 +9,8 @@ import tempfile
 from utility_functions import get_latest_revocation_list
 
 
-def test_get_latest_revocation_list():
+def test_get_latest_revocation_list() -> None:
+    """Test the get_latest_revocation_list function."""
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_path = pathlib.Path(temp_dir)
 
