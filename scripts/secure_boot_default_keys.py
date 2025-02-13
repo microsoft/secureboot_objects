@@ -169,9 +169,6 @@ def _convert_csv_to_signature_list(file: str, signature_owner: str, target_arch:
 
     return siglist.encode()
 
-
-
-
 def _convert_json_to_signature_list(file: str, signature_owner: str, target_arch: str = None, **kwargs: any) -> bytes:
     """Converts a JSON file containing image hashes to an EFI signature list.
 
