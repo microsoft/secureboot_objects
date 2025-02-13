@@ -13,6 +13,7 @@ import tempfile
 
 import prepare_firmware_binaries as prepare_firmware_binaries
 
+EXPECTED_FILES = 12
 
 def test_layout(tmpdir: pathlib.Path) -> None:
     """Tests that files are correctly copied, and all zip / gztars are created."""
@@ -54,4 +55,4 @@ def test_layout(tmpdir: pathlib.Path) -> None:
         with tempfile.TemporaryDirectory() as temp_unzip_dir:
             shutil.unpack_archive(file, temp_unzip_dir)
 
-            assert len(list(pathlib.Path(temp_unzip_dir).glob("*"))) == 7
+            assert len(list(pathlib.Path(temp_unzip_dir).glob("*"))) == EXPECTED_FILES

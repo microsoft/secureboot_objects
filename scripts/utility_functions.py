@@ -182,8 +182,26 @@ def describe_signature_list(signature_database: EfiSignatureDatabase) -> list:
     return readable_signature_database
 
 
-def get_certificates(auth_var: EfiVariableAuthentication2) -> bool:
-    """Get the certificates from the authenticated variable."""
+class EmptyCertificate:
+    """A class representing an empty certificate."""
+    def __init__(self) -> None:
+        """Initialize an EmptyCertificate instance."""
+        self.subject = self
+        self.issuer = self
+
+    def rfc4514_string(self) -> str:
+        """Return a string representation of the certificate in RFC 4514 format."""
+        return "EMPTY PKCS7 SIGNATURE"
+
+def get_certificates(auth_var: EfiVariableAuthentication2) -> list:
+    """Get the certificates from the authenticated variable.
+
+    Args:
+        auth_var (EfiVariableAuthentication2): The authenticated variable.
+
+    Returns:
+        list: a list of certificates
+    """
     asn1_signed_Data, _ = der_decode(auth_var.auth_info.cert_data, asn1Spec=rfc2315.SignedData())
     content_info = rfc2315.ContentInfo()
     content_info.setComponentByName("contentType", rfc2315.signedData)
@@ -191,11 +209,14 @@ def get_certificates(auth_var: EfiVariableAuthentication2) -> bool:
 
     signature = der_encode(content_info)
 
-    certificates = pkcs7.load_der_pkcs7_certificates(signature)
+    try:
+        certificates = pkcs7.load_der_pkcs7_certificates(signature)
+    except ValueError:
+        certificates = [EmptyCertificate()]
 
     return certificates
 
-def get_signed_payload_receipt(signed_efi_sig_database: pathlib.Path) -> None:
+def get_signed_payload_receipt(signed_efi_sig_database: pathlib.Path) -> dict:
     """Parse a signed secure boot payload.
 
     Args:
@@ -228,6 +249,36 @@ def get_signed_payload_receipt(signed_efi_sig_database: pathlib.Path) -> None:
         receipt["authenticatedVariableInfo"] = auth_var_info
 
         signature_database = auth_var.sig_list_payload
+
+        # Now we can parse the SignatureDatabase
+        readable_signature_database = describe_signature_list(signature_database)
+
+        receipt["signatureDatabase"] = readable_signature_database
+
+    return receipt
+
+
+def get_unsigned_payload_receipt(efi_sig_database: pathlib.Path) -> dict:
+    """Parse a signed secure boot payload.
+
+    Args:
+        efi_sig_database (pathlib.Path): The path to the secure boot payload file.
+
+    Returns:
+        None
+    """
+    receipt = {}
+
+    with open(efi_sig_database, "rb") as f:
+        # Read the contents of the file
+        contents = f.read()
+
+        ## Now we can parse the SignatureDatabase
+        f.seek(0)
+        signature_database = EfiSignatureDatabase(filestream=f)
+
+        receipt["fileName"] = efi_sig_database.name
+        receipt['fileHash'] = hashlib.sha256(contents).hexdigest().upper()
 
         # Now we can parse the SignatureDatabase
         readable_signature_database = describe_signature_list(signature_database)
