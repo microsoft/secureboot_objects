@@ -10,6 +10,7 @@ import datetime
 import io
 import json
 import logging
+import os
 import pathlib
 import uuid
 from pathlib import Path
@@ -334,7 +335,7 @@ def build_default_keys(keystore: dict) -> dict:
             files = keystore[variable]["files"]
             # The files should be handled differently depending on the file extension.
             for file_dict in files:
-                # Get the file extension.\
+                # Get the file extension.
                 file_path = Path(file_dict["path"])
                 file_ext = file_path.suffix.lower()
 
@@ -346,6 +347,10 @@ def build_default_keys(keystore: dict) -> dict:
                         file_path,
                         signature_owner,
                     )
+
+                # skip files that do not have an extension
+                if file_ext is None or file_ext == "":
+                    continue
 
                 convert_handler = file_handler.get(file_ext, _invalid_file)
 
@@ -446,22 +451,27 @@ def main() -> int:
 
     args = parser.parse_args()
 
-    parent = Path(args.output)
-    imaging_dir = parent / "Imaging"
-    create_folder(imaging_dir)
-
-    imaging_readme_path = imaging_dir / "README.md"
-
     with open(args.keystore, "rb") as f:
         keystore = tomllib.load(f)
 
+        parent = Path(args.output)
+
+        output_folder = parent / os.path.basename(args.keystore).split('.')[0]
+        create_folder(output_folder)
+
+        imaging_dir = output_folder / "Imaging"
+        create_folder(imaging_dir)
+
+        imaging_readme_path = imaging_dir / "README.md"
+
         # Build the default key binaries; filters on requested architectures in the configuration file.
         default_keys = build_default_keys(keystore)
+
         # Write the keys to the output directory and create a README.md file for each architecture.
         for key, value in default_keys.items():
             arch, variable = key
 
-            firmware_architecture = parent / arch.capitalize()
+            firmware_architecture = output_folder / arch.capitalize()
             create_folder(firmware_architecture)
 
             out_file = firmware_architecture / f"{variable}.bin"
@@ -479,7 +489,7 @@ def main() -> int:
             with open(out_file, "wb") as f:
                 f.write(_create_time_based_payload(value))
 
-            readme_path = parent / arch.capitalize() / "README.md"
+            readme_path = output_folder / arch.capitalize() / "README.md"
             if readme_path.exists():
                 readme_path.unlink()
             with open(readme_path, "wb") as f:
