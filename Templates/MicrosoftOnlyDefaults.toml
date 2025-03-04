@@ -1,7 +1,7 @@
 # @file
 # Template Name: New/Secure – Microsoft Only
 # Description:
-#  This template is for systems that need to support only Microsoft certificates.
+#  This template is for systems that need to support only Windows signed by the 2023 Windows UEFI Certificate Authority.
 #  For Windows only systems, this is the most secure template.
 #
 # Copyright (C) Microsoft Corporation
