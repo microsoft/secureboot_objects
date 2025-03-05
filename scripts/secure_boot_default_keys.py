@@ -423,6 +423,21 @@ def create_folder(directory: Path) -> None:
     directory.mkdir(exist_ok=True, parents=True)
     directory.touch()
 
+def create_binary(file: str, data: bytes) -> None:
+    """Creates a binary file.
+
+    Args:
+        file (str): The path to the file to create.
+        data (bytes): The data to write to the file.
+    """
+    file_path = Path(file)
+    if file_path.exists():
+        file_path.unlink()
+
+    with open(file, "wb") as f:
+        f.write(data)
+
+
 def main() -> int:
     """Main entry point into the tool."""
     import argparse
@@ -448,21 +463,16 @@ def main() -> int:
         default=pathlib.Path.cwd() / "Artifacts",
         help="The output directory for the default keys.",
     )
-
     args = parser.parse_args()
 
     with open(args.keystore, "rb") as f:
         keystore = tomllib.load(f)
 
-        parent = Path(args.output)
-
-        output_folder = parent / os.path.basename(args.keystore).split('.')[0]
+        # First create the output folder if it does not exist
+        output_folder = Path(args.output)
         create_folder(output_folder)
 
-        imaging_dir = output_folder / "Imaging"
-        create_folder(imaging_dir)
-
-        imaging_readme_path = imaging_dir / "README.md"
+        template_name = os.path.basename(args.keystore).split('.')[0]
 
         # Build the default key binaries; filters on requested architectures in the configuration file.
         default_keys = build_default_keys(keystore)
@@ -471,34 +481,41 @@ def main() -> int:
         for key, value in default_keys.items():
             arch, variable = key
 
-            firmware_architecture = output_folder / arch.capitalize()
-            create_folder(firmware_architecture)
+            arch_folder = output_folder / arch.capitalize()
+            create_folder(arch_folder)
 
-            out_file = firmware_architecture / f"{variable}.bin"
-            if out_file.exists():
-                out_file.unlink()
-            with open(out_file, "wb") as f:
-                f.write(value)
+            template_folder = arch_folder / template_name
+            create_folder(template_folder)
 
-            imaging_architecture = imaging_dir / arch.capitalize()
-            create_folder(imaging_architecture)
+            # Create the firmware binaries for the default keys
+            firmware_folder = template_folder / "Firmware"
+            create_folder(firmware_folder)
 
-            out_file = imaging_architecture / f"{variable}.bin"
-            if out_file.exists():
-                out_file.unlink()
-            with open(out_file, "wb") as f:
-                f.write(_create_time_based_payload(value))
+            out_file = firmware_folder / f"{variable}.bin"
+            create_binary(out_file, value)
 
-            readme_path = output_folder / arch.capitalize() / "README.md"
-            if readme_path.exists():
-                readme_path.unlink()
-            with open(readme_path, "wb") as f:
-                f.write(create_readme(keystore, arch))
+            # Intentionally recreate the README.md file
+            readme_path = firmware_folder / "README.md"
+            create_binary(readme_path, create_readme(keystore, arch))
 
-    with open(imaging_readme_path, "wb") as f:
-        f.write(IMAGING_INFORMATION.encode())
-        f.write(b'\n\n' + b"-" * 80 + b"\n\n")
-        f.write(LICENSE.encode())
+            # Create the manufacturing binaries for the default keys
+            # These are special binaries that are used by Project Mu based firmware
+            # to enable secure boot in the manufacturing process.
+
+            manufacturing_folder = template_folder / "Manufacturing"
+            create_folder(manufacturing_folder)
+
+            out_file = manufacturing_folder / f"{variable}.bin"
+            create_binary(out_file, _create_time_based_payload(value))
+
+            # Intentionally recreate the README.md file
+            manufacturing_readme_path = manufacturing_folder / "README.md"
+            manufacturing_info = IMAGING_INFORMATION.encode()
+            manufacturing_info += b"\n\n" + b"-" * 80 + b"\n\n"
+            manufacturing_info += LICENSE.encode()
+            create_binary(manufacturing_readme_path, manufacturing_info)
+
+    logging.info("Default keys created successfully. See %s for details.", args.output)
 
     return 0
 
