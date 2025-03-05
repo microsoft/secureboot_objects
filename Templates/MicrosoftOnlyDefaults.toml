@@ -54,11 +54,8 @@ description = "2023+ signed Windows Boot Media (e.g. 2023 signed Windows)"
 help = "Contains a list of revoked certificates that will not execute on this system. Filtered per Architecture (ARM, Intel)."
 
 [[DefaultDbx.files]]
-#
-# New recommendation is to allow the OS to manage the dbx and not ship a dbx with the firmware.
-# Purposely leaving this blank to avoid shipping a default dbx with the firmware.
-#
-path = ""
-sha1 = 0x0000000000000000000000000000000000000000
-signature_owner = ""
-description =  "Revoked hashes, certificates, and SVNs that will not execute on this system."
+path = "PreSignedObjects/DB/Certificates/microsoft uefi ca 2023.der"
+url = "https://go.microsoft.com/fwlink/?linkid=2239872"
+sha1 = 0xb5eeb4a6706048073f0ed296e7f580a790b59eaa
+signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
+description = "2023+ signed Third-Party UEFI CA Signed Applications (e.g. 2023 signed Linux)"
