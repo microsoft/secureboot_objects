@@ -498,22 +498,21 @@ def main() -> int:
             readme_path = firmware_folder / "README.md"
             create_binary(readme_path, create_readme(keystore, arch))
 
-            # Create the manufacturing binaries for the default keys
+            # Create the imaging binaries for the default keys
             # These are special binaries that are used by Project Mu based firmware
-            # to enable secure boot in the manufacturing process.
+            # to enable secure boot in the imaging process.
+            imaging_folder = template_folder / "Imaging"
+            create_folder(imaging_folder)
 
-            manufacturing_folder = template_folder / "Manufacturing"
-            create_folder(manufacturing_folder)
-
-            out_file = manufacturing_folder / f"{variable}.bin"
+            out_file = imaging_folder / f"{variable}.bin"
             create_binary(out_file, _create_time_based_payload(value))
 
             # Intentionally recreate the README.md file
-            manufacturing_readme_path = manufacturing_folder / "README.md"
-            manufacturing_info = IMAGING_INFORMATION.encode()
-            manufacturing_info += b"\n\n" + b"-" * 80 + b"\n\n"
-            manufacturing_info += LICENSE.encode()
-            create_binary(manufacturing_readme_path, manufacturing_info)
+            imaging_readme_path = imaging_folder / "README.md"
+            imaging_info = IMAGING_INFORMATION.encode()
+            imaging_info += b"\n\n" + b"-" * 80 + b"\n\n"
+            imaging_info += LICENSE.encode()
+            create_binary(imaging_readme_path, imaging_info)
 
     logging.info("Default keys created successfully. See %s for details.", args.output)
 
