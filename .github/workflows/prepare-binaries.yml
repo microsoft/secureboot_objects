@@ -52,8 +52,14 @@ jobs:
     - name: Run Unit Tests
       run: pytest scripts/
 
-    - name: Build Intel / ARM Binaries
-      run: python scripts/secure_boot_default_keys.py --keystore FirmwareDefaults.toml -o FirmwareArtifacts
+    - name: Build Microsoft Only Defaults Template (2023 MSFT)
+      run: python scripts/secure_boot_default_keys.py --keystore Templates/MicrosoftOnlyDefaults.toml -o FirmwareArtifacts
+
+    - name: Build Compatible Defaults Template (2023 MSFT + 2023 3P + 2023 OROM)
+      run: python scripts/secure_boot_default_keys.py --keystore Templates/CompatibleDefaults.toml -o FirmwareArtifacts
+
+    - name: Build Legacy Compatible Templates (2023 MSFT + 2023 3P + 2023 OROM + 2011 3P)
+      run: python scripts/secure_boot_default_keys.py --keystore Templates/MicrosoftOnlyDefaults.toml -o FirmwareArtifacts
 
     - name: Upload Firmware Binaries as Artifacts
       uses: actions/upload-artifact@v4
