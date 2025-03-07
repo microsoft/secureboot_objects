@@ -20,7 +20,6 @@ LAYOUT = {
     "edk2-aarch64-secureboot-binaries": "Aarch64",
     "edk2-ia32-secureboot-binaries": "Ia32",
     "edk2-x64-secureboot-binaries": "X64",
-    "edk2-Imaging-secureboot-binaries": "Imaging",
 }
 
 INFORMATION = (pathlib.Path(__file__).parent / "information" / "firmware_binaries_information.md").read_text()
