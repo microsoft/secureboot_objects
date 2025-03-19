@@ -1,0 +1,61 @@
+# @file
+# Template Name: New/Secure – Microsoft Only
+# Description:
+#  This template is for systems that need to support only Windows signed by the 2023 Windows UEFI Certificate Authority.
+#  For Windows only systems, this is the most secure template.
+#
+# Copyright (C) Microsoft Corporation
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+################################
+# Default PK File Entry #
+################################
+
+[DefaultPk]
+help = "Contains the Microsoft PK to enable signature database updates and binary execution."
+
+[[DefaultPk.files]]
+path = "PreSignedObjects/PK/Certificate/WindowsOEMDevicesPK.der"
+sha1 = 0x3D8660C0CB2D57B189C3D7995572A552F75E48B5
+signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
+description = "Platform Key (owner) who may authorize changes to the KEK Variable"
+
+###################################
+# Default Kek File Entries #
+###################################
+[DefaultKek]
+help = "Contains the Microsoft KEKs to enable signature database updates and binary execution."
+
+[[DefaultKek.files]]
+path = "PreSignedObjects/KEK/Certificates/microsoft corporation kek 2k ca 2023.der"
+url = "https://go.microsoft.com/fwlink/?linkid=2239775"
+sha1 = 0x459ab6fb5e284d272d5e3e6abc8ed663829d632b
+signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
+description = "2023+ Microsoft Authorizes Signature Database Updates"
+
+##################################
+# Default Db File Entries #
+##################################
+[DefaultDb]
+help = "Contains only Microsoft certificates to verify binaries before execution. More than Default3PDb."
+
+[[DefaultDb.files]]
+path = "PreSignedObjects/DB/Certificates/windows uefi ca 2023.der"
+url = "https://go.microsoft.com/fwlink/?linkid=2239776"
+sha1 = 0x45a0fa32604773c82433c3b7d59e7466b3ac0c67
+signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
+description = "2023+ signed Windows Boot Media (e.g. 2023 signed Windows)"
+
+############################
+# Default Dbx File Entries #
+############################
+[DefaultDbx]
+help = "Contains a list of revoked certificates that will not execute on this system. Filtered per Architecture (ARM, Intel)."
+
+[[DefaultDbx.files]]
+path = "PreSignedObjects/DB/Certificates/microsoft uefi ca 2023.der"
+url = "https://go.microsoft.com/fwlink/?linkid=2239872"
+sha1 = 0xb5eeb4a6706048073f0ed296e7f580a790b59eaa
+signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
+description = "2023+ signed Third-Party UEFI CA Signed Applications (e.g. 2023 signed Linux)"
