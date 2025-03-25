@@ -1,3 +1,23 @@
+<#
+.SYNOPSIS
+    Microsoft 'Windows UEFI CA 2023' Media Update Script
+
+.DESCRIPTION
+    This script updates Windows media to use boot binaries signed with the 'Windows UEFI CA 2023' certificate.
+
+.NOTES
+    File Name  : Make2023BootableMedia.ps1
+    Author     : Microsoft Corporation
+    Version    : 1.0
+    Date       : 2025-02-25
+
+.LICENSE
+    Licensed under the BSD License. See LICENSE file in the project root for full license information.
+
+.COPYRIGHT
+    Copyright (c) Microsoft Corporation. All rights reserved.
+#>
+
 param (
 
     [Parameter(Position=0,mandatory=$true)]
