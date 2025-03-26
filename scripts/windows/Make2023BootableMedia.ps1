@@ -12,7 +12,7 @@
     Date       : 2025-02-25
 
 .LICENSE
-    Licensed under the BSD License. See LICENSE file in the project root for full license information.
+    Licensed under the BSD License. See License.txt in the project root for full license information.
 
 .COPYRIGHT
     Copyright (c) Microsoft Corporation. All rights reserved.
