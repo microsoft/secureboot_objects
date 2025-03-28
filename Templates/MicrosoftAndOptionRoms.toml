@@ -1,8 +1,8 @@
 # @file
-# Template Name: Compatible – All Current Certificates and Legacy Certificates
+# Template Name: Secure Desktop – Microsoft Only
 # Description:
-#   This template is for systems that need to support all existing boot media and devices.
-#   This is the most compatible template albeit the least secure. It is not recommended for new designs.
+#  This template is for systems that need to support only Windows signed by the 2023 Windows UEFI Certificate Authority.
+#  For Windows only systems, this is the most secure template.
 #
 # Copyright (C) Microsoft Corporation
 # SPDX-License-Identifier: BSD-2-Clause-Patent
@@ -11,6 +11,7 @@
 ################################
 # Default PK File Entry #
 ################################
+
 [DefaultPk]
 help = "Contains the Microsoft PK to enable signature database updates and binary execution."
 
@@ -37,7 +38,7 @@ description = "2023+ Microsoft Authorizes Signature Database Updates"
 # Default Db File Entries #
 ##################################
 [DefaultDb]
-help =  "Contains 2023 Microsoft and UEFI third party certificates to verify binaries before execution. More compatible than MicrosoftOnlyDefaults."
+help = "Contains only Microsoft certificates to verify binaries before execution. More than Default3PDb."
 
 [[DefaultDb.files]]
 path = "PreSignedObjects/DB/Certificates/windows uefi ca 2023.der"
@@ -47,32 +48,11 @@ signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
 description = "2023+ signed Windows Boot Media (e.g. 2023 signed Windows)"
 
 [[DefaultDb.files]]
-path = "PreSignedObjects/DB/Certificates/microsoft uefi ca 2023.der"
-url = "https://go.microsoft.com/fwlink/?linkid=2239872"
-sha1 = 0xb5eeb4a6706048073f0ed296e7f580a790b59eaa
-signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
-description = "2023+ signed Third-Party UEFI CA Signed Applications (e.g. 2023 signed Linux)"
-
-[[DefaultDb.files]]
 path = "PreSignedObjects/DB/Certificates/microsoft option rom uefi ca 2023.der"
 url = "http://www.microsoft.com/pkiops/certs/microsoft%20option%20rom%20uefi%20ca%202023.crt"
 sha1 = 0x3FB39E2B8BD183BF9E4594E72183CA60AFCD4277
 signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
 description = "2023+ signed UEFI Third-Party Option ROMs (e.g. Graphics/Storage/Networking Drivers)"
-
-[[DefaultDb.files]]
-path = "PreSignedObjects/DB/Certificates/MicWinProPCA2011_2011-10-19.der"
-url = "https://go.microsoft.com/fwlink/p/?linkid=321192"
-sha1 = 0x580a6f4cc4e4b669b9ebdc1b2b3e087b80d0678d
-signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
-description = "2011 signed Windows Boot Media (e.g. 2011 signed Windows)"
-
-[[DefaultDb.files]]
-path = "PreSignedObjects/DB/Certificates/MicCorUEFCA2011_2011-06-27.der"
-url = "https://go.microsoft.com/fwlink/p/?linkid=321194"
-sha1 = 0x46def63b5ce61cf8ba0de2e6639c1019d0ed14f3
-signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
-description = "2011 signed UEFI Applications and Third-Party Option ROMs (e.g. 2011+ Linux and Graphics/Storage/Networking Drivers)"
 
 ############################
 # Default Dbx File Entries #
