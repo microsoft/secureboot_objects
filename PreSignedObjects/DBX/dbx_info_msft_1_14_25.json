@@ -6451,7 +6451,7 @@
 	},
     "certificates": [
         {
-            "value": "WindowsProduction2011.cer",
+            "value": "MicWinProPCA2011_2011-10-19.cer",
             "subjectName": "CN = Microsoft Windows Production PCA 2011",
             "issuerName": "CN = Microsoft Root Certificate Authority 2010",
             "thumbprint": "580a6f4cc4e4b669b9ebdc1b2b3e087b80d0678d",

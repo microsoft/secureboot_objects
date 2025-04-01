@@ -237,7 +237,7 @@
           "properties": {
             "value": {
 			  "type": "string",
-			  "description": "Base64 encoded certificate"
+			  "description": "Path to the certificate file"
 			},
 			"subjectName": {
 			  "type": "string",
