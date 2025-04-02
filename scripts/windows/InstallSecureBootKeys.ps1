@@ -32,7 +32,7 @@ if ($SecurebootEnabled) {
 write-host "Enrolling certificates for Secureboot" -ForegroundColor Green
 
 # Check if the PreSignedObjects exist
-$PreSignedObjects = Get-ChildItem -Path $PresignedObjectsPath -Filter *.esl
+$PreSignedObjects = Get-ChildItem -Path $PresignedObjectsPath -Filter *.bin
 foreach ($PreSignedObject in @("DefaultPk.bin", "DefaultKek.bin", "DefaultDb.bin", "DefaultDbx.bin")) {
     if ($PreSignedObjects.Name -notcontains $PreSignedObject) {
         Write-Host "PreSignedObject $PreSignedObject does not exist. Please download the latest release and try again." -ForegroundColor Yellow
@@ -58,7 +58,7 @@ Set-SecureBootUEFI -Time $time -ContentFilePath "$PresignedObjectsPath\DefaultKe
 
 write-host "Enrolling PK" -ForegroundColor Green
 
-if ($null -ne $PathToPkP7b) {
+if (-not [string]::IsNullOrEmpty($PathToPkP7b)) {
     Set-SecureBootUEFI -Time $time -ContentFilePath "$PresignedObjectsPath\DefaultPk.bin" -Name PK -SignedFilePath $PathToPkP7b
 } else {
     # Note this will work on Project MU based firmware (Ex. Surface) however this is not an industry wide feature
