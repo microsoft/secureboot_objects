@@ -55,10 +55,10 @@ help = "Contains a list of revoked certificates that will not execute on this sy
 
 [[DefaultDbx.files]]
 #
-# New recommendation is to allow the OS to manage the dbx and not ship a dbx with the firmware.
-# Purposely leaving this blank to avoid shipping a default dbx with the firmware.
+# New recommendation is to allow the OS to manage the dbx and not ship a DefaultDbx with the firmware.
+# A valid configuration is to ship an unset DBX variable.
 #
-path = ""
-sha1 = 0x0000000000000000000000000000000000000000
-signature_owner = ""
-description =  "Revoked hashes, certificates, and SVNs that will not execute on this system."
+path = "PreSignedObjects/DBX/dbx.empty"
+sha1 = 0xF8D326CCD9233747A29E2F67AFEB77C25787BD39
+signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
+description =  "Special file to create an empty signature database."
