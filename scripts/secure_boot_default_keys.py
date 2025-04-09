@@ -19,6 +19,7 @@ from typing import Union
 
 from edk2toollib.uefi.authenticated_variables_structure_support import (
     EfiSignatureDataEfiCertSha256,
+    EfiSignatureDataEfiCertX509,
     EfiSignatureDataFactory,
     EfiSignatureList,
     EfiTime,
@@ -86,6 +87,32 @@ def _invalid_file(file: str, **kwargs: any) -> None:
         ValueError: If the file is invalid, raise a ValueError.
     """
     raise ValueError(f"Invalid filetype for conversion: {file}")
+
+
+def _convert_empty_to_signature_list(file: str, signature_owner: str, **kwargs: any) -> bytes:
+    """This function is used to handle special cases where the DBX is empty.
+
+    Args:
+        file: The path to the file
+        signature_owner: The signature owner. Defaults to DEFAULT_MS_SIGNATURE_GUID.
+
+    Optional Args:
+        **kwargs: Additional arguments to be passed to the function (These will be intentionally ignored)
+
+    Raises:
+        ValueError: If the file is invalid, raise a ValueError.
+    """
+    if signature_owner is not None and not isinstance(signature_owner, uuid.UUID):
+        signature_owner = uuid.UUID(signature_owner)
+
+    # Using EFI_CERT_X509_GUID as the typeguid for the signature list only because
+    # and has limited uses today. This is a special case for the empty signature list
+    siglist = EfiSignatureList(typeguid=EfiSignatureDataFactory.EFI_CERT_X509_GUID)
+
+    # This is a special case. The file provided is not a valid certificate, but signals that
+    # should create an empty signature list.
+    siglist.AddSignatureHeader(None, SigSize=EfiSignatureDataEfiCertX509.STATIC_STRUCT_SIZE)
+    return siglist.encode()
 
 
 def _convert_crt_to_signature_list(file: str, signature_owner: str, **kwargs: any) -> bytes:
@@ -210,7 +237,6 @@ def _convert_json_to_signature_list(file: str, signature_owner: str, target_arch
 
     with open(file, "r") as json_file:
         data = json.load(json_file)
-
         hashes = data["images"]
         for arch in hashes:
             if target_arch is not None and arch != target_arch:
@@ -318,6 +344,7 @@ def build_default_keys(keystore: dict) -> dict:
         ".crt": _convert_crt_to_signature_list,
         ".der": _convert_crt_to_signature_list,  # DER is just a more specific certificate format than CRT
         ".csv": _convert_csv_to_signature_list,
+        ".empty": _convert_empty_to_signature_list,
         ".json": _convert_json_to_signature_list,
     }
 
