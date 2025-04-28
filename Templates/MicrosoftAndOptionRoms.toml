@@ -12,10 +12,10 @@
 # Default PK File Entry #
 ################################
 
-[DefaultPk]
+[PK]
 help = "Contains the Microsoft PK to enable signature database updates and binary execution."
 
-[[DefaultPk.files]]
+[[PK.files]]
 path = "PreSignedObjects/PK/Certificate/WindowsOEMDevicesPK.der"
 sha1 = 0x3D8660C0CB2D57B189C3D7995572A552F75E48B5
 signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
@@ -24,10 +24,10 @@ description = "Platform Key (owner) who may authorize changes to the KEK Variabl
 ###################################
 # Default Kek File Entries #
 ###################################
-[DefaultKek]
+[KEK]
 help = "Contains the Microsoft KEKs to enable signature database updates and binary execution."
 
-[[DefaultKek.files]]
+[[KEK.files]]
 path = "PreSignedObjects/KEK/Certificates/microsoft corporation kek 2k ca 2023.der"
 url = "https://go.microsoft.com/fwlink/?linkid=2239775"
 sha1 = 0x459ab6fb5e284d272d5e3e6abc8ed663829d632b
@@ -37,17 +37,17 @@ description = "2023+ Microsoft Authorizes Signature Database Updates"
 ##################################
 # Default Db File Entries #
 ##################################
-[DefaultDb]
+[DB]
 help = "Contains only Microsoft certificates to verify binaries before execution. More than Default3PDb."
 
-[[DefaultDb.files]]
+[[DB.files]]
 path = "PreSignedObjects/DB/Certificates/windows uefi ca 2023.der"
 url = "https://go.microsoft.com/fwlink/?linkid=2239776"
 sha1 = 0x45a0fa32604773c82433c3b7d59e7466b3ac0c67
 signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
 description = "2023+ signed Windows Boot Media (e.g. 2023 signed Windows)"
 
-[[DefaultDb.files]]
+[[DB.files]]
 path = "PreSignedObjects/DB/Certificates/microsoft option rom uefi ca 2023.der"
 url = "http://www.microsoft.com/pkiops/certs/microsoft%20option%20rom%20uefi%20ca%202023.crt"
 sha1 = 0x3FB39E2B8BD183BF9E4594E72183CA60AFCD4277
@@ -57,10 +57,10 @@ description = "2023+ signed UEFI Third-Party Option ROMs (e.g. Graphics/Storage/
 ############################
 # Default Dbx File Entries #
 ############################
-[DefaultDbx]
+[DBX]
 help = "Contains a list of revoked certificates that will not execute on this system. Filtered per Architecture (ARM, Intel)."
 
-[[DefaultDbx.files]]
+[[DBX.files]]
 #
 # New recommendation is to allow the OS to manage the dbx and not ship a DefaultDbx with the firmware.
 # A valid configuration is to ship an unset DBX variable.
