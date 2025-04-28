@@ -13,7 +13,7 @@ A path to the directory containing the pre-signed Secure Boot objects.
 .NOTES
 Author: Microsoft
 Date: 4/2/25
-Version: 1
+Version: 1.1
 #>
 
 param(
@@ -57,7 +57,7 @@ try {
     Log-Message "Enrolling certificates for Secure Boot..." "Green"
 
     # Validate the presence of required pre-signed objects
-    $RequiredFiles = @("DefaultPk.bin", "DefaultKek.bin", "DefaultDb.bin", "DefaultDbx.bin")
+    $RequiredFiles = @("PK.bin", "KEK.bin", "DB.bin", "DBX.bin")
     foreach ($RequiredFile in $RequiredFiles) {
         $FilePath = Join-Path -Path $PresignedObjectsPath -ChildPath $RequiredFile
         if (-not (Test-Path -Path $FilePath)) {
@@ -68,7 +68,7 @@ try {
     }
 
     # Validate the size of the DBX file (minimum 28 bytes - EFI_SIGNATURE_LIST minimum size assuming 0 entries)
-    $DbxFilePath = Join-Path -Path $PresignedObjectsPath -ChildPath "DefaultDbx.bin"
+    $DbxFilePath = Join-Path -Path $PresignedObjectsPath -ChildPath "DBX.bin"
     Validate-FileSize -FilePath $DbxFilePath -MinSizeBytes 28
 
     # Timestamp for Secure Boot enrollment
@@ -76,7 +76,7 @@ try {
 
     # Enroll certificates in reverse order
     Log-Message "Enrolling DB..." "Green"
-    $Result = Set-SecureBootUEFI -Time $time -ContentFilePath (Join-Path $PresignedObjectsPath "DefaultDb.bin") -Name db
+    $Result = Set-SecureBootUEFI -Time $time -ContentFilePath (Join-Path $PresignedObjectsPath "DB.bin") -Name db
     if ($null -ne $Result) {
         Log-Message "DB enrolled successfully." "Green"
     } else {
@@ -94,7 +94,7 @@ try {
     }
 
     Log-Message "Enrolling KEK..." "Green"
-    $Result = Set-SecureBootUEFI -Time $time -ContentFilePath (Join-Path $PresignedObjectsPath "DefaultKek.bin") -Name KEK
+    $Result = Set-SecureBootUEFI -Time $time -ContentFilePath (Join-Path $PresignedObjectsPath "KEK.bin") -Name KEK
     if ($null -ne $Result) {
         Log-Message "KEK enrolled successfully." "Green"
     } else {
@@ -103,7 +103,7 @@ try {
     }
 
     Log-Message "Enrolling PK..." "Green"
-    $PkFilePath = Join-Path -Path $PresignedObjectsPath -ChildPath "DefaultPk.bin"
+    $PkFilePath = Join-Path -Path $PresignedObjectsPath -ChildPath "PK.bin"
     $Result = $null
     if (-not [string]::IsNullOrEmpty($PathToPkP7b)) {
         $Result = Set-SecureBootUEFI -Time $time -ContentFilePath $PkFilePath -Name PK -SignedFilePath $PathToPkP7b
