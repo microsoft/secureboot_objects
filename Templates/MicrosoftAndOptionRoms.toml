@@ -1,8 +1,8 @@
 # @file
 # Template Name: Secure Desktop – Microsoft Only
 # Description:
-#  This template is for systems that need to support only Windows signed by the 2023 Windows UEFI Certificate Authority.
-#  For Windows only systems, this is the most secure template.
+#  [#!IMPORTANT] This template is not yet recommended for production systems. While this would be more secure than including the UEFI CA,
+#  currently, the Option ROM CA (e.g. Graphics cards) has not saturated the ecosystem enough to be recommended for production systems.
 #
 # Copyright (C) Microsoft Corporation
 # SPDX-License-Identifier: BSD-2-Clause-Patent
