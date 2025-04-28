@@ -1,0 +1,65 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "DBX Revocation Format",
+    "description": "This schema defines the format for revocation of DBX entries.",
+    "type": "object",
+    "properties": {
+        "revocations": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "securityEvent": {
+                        "type": "string",
+                        "description": "The security event that triggered the revocation.",
+                        "pattern": "^(CVE|SVN)"
+                    },
+                    "timestamp": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The timestamp of the revocation."
+                    },
+                    "CVE": {
+                        "type": "object",
+                        "properties": {
+                            "hashes": {
+                                "type": "array",
+                                "items": {
+                                    "$ref": "hash_schema.json"
+                                }
+                            },
+                            "SVN": {
+                                "$ref": "svn_schema.json"
+                            },
+                            "certificate": {
+                                "$ref": "cert_schema.json"
+                            }
+                        }
+                    },
+                    "SVN": {
+                        "$ref": "svn_schema.json"
+                    }
+                },
+                "required": [
+                    "securityEvent",
+                    "timestamp"
+                ],
+                "oneOf": [
+                    {
+                        "required": [
+                            "CVE"
+                        ]
+                    },
+                    {
+                        "required": [
+                            "SVN"
+                        ]
+                    }
+                ]
+            }
+        }
+    },
+    "required": [
+        "revocations"
+    ]
+}

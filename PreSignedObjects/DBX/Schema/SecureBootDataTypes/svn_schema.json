@@ -1,0 +1,49 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "SVN Format",
+    "description": "This schema defines the format for SVN entries.",
+    "type": "object",
+    "properties": {
+        "hash": {
+            "type": "string",
+            "pattern": "^[a-fA-F0-9]{64}$"
+        },
+        "svnData": {
+            "type": "object",
+            "properties": {
+                "version": {
+                    "type": "integer",
+                    "minimum": 1
+                },
+                "applicationGuid": {
+                    "type": "string",
+                    "format": "uuid"
+                },
+                "component": {
+                    "type": "string",
+                    "description": "Component name associated with the SVN entry."
+                },
+                "comment": {
+                    "type": "string",
+                    "description": "Comment associated with the SVN entry."
+                },
+                "svn": {
+                    "type": "object",
+                    "properties": {
+                        "major_svn": {
+                            "type": "integer",
+                            "minimum": 0
+                        },
+                        "minor_svn": {
+                            "type": "integer",
+                            "minimum": 0
+                        }
+                    },
+                    "required": ["major_svn", "minor_svn"]
+                }
+            },
+            "required": ["version", "applicationGuid", "component", "comment", "svn"]
+        }
+    },
+    "required": ["hash", "svnData"]
+}

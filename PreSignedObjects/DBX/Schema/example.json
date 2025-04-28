@@ -1,0 +1,66 @@
+{
+    "revocations": [
+        {
+            "securityEvent": "CVE-2023-12345",
+            "timestamp": "2023-09-01T12:34:56Z",
+            "CVE": {
+                "hashes": [
+                    {
+                        "architecture": "x64",
+                        "productName": "VulnerableModule.efi",
+                        "companyName": "Contoso Corp",
+                        "comment": "This module is vulnerable to CVE-XXXX-XXXXX.",
+                        "hashType": "SHA256",
+                        "hash": "0000000000000000000000000000000000000000000000000000000000000000",
+                        "authority": "CN = NOT A REAL CA"
+                    },
+                    {
+                        "architecture": "aarch64",
+                        "productName": "VulnerableModule.efi",
+                        "companyName": "Contoso Corp",
+                        "comment": "This module is vulnerable to CVE-XXXX-XXXXX.",
+                        "hashType": "SHA256",
+                        "hash": "1111111111111111111111111111111111111111111111111111111111111111",
+                        "authority": "CN = NOT A REAL CA"
+                    }
+                ],
+                "SVN":{
+                    "hash": "ED5521fefCb7C5F14AB1D5E989e4DFFE9f6ced9B96a5A54Ee4Eeabd6CfB3Ced2",
+                    "svnData": {
+                        "version": 2,
+                        "applicationGuid": "123e4567-e89b-12d3-a456-426614174000",
+                        "component": "bootmgfw.efi",
+                        "comment": "This component is vulnerable to CVE-XXXX-XXXXX.",
+                        "svn": {
+                            "major_svn": 2,
+                            "minor_svn": 1
+                        }
+                    }
+                },
+                "Certificate": {
+                    "commonName": "CN = NOT A REAL CA",
+                    "issuer": "CN = NOT A REAL CA",
+                    "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+                    "path": "Path/To/Certificate"
+                }
+            }
+        },
+        {
+            "securityEvent": "SVN-2023",
+            "timestamp": "2023-09-02T08:22:45Z",
+            "SVN": {
+                "hash": "ED5521fefCb7C5F14AB1D5E989e4DFFE9f6ced9B96a5A54Ee4Eeabd6CfB3Ced2",
+                "svnData": {
+                    "version": 2,
+                    "applicationGuid": "123e4567-e89b-12d3-a456-426614174000",
+                    "component": "bootmgfw.efi",
+                    "comment": "This component is vulnerable to CVE-XXXX-XXXXX.",
+                    "svn": {
+                        "major_svn": 2,
+                        "minor_svn": 1
+                    }
+                }
+            }
+        }
+    ]
+}

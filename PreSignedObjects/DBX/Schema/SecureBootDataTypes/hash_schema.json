@@ -1,0 +1,25 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "hash format Format",
+    "description": "This schema defines the format for hash based entries.",
+    "type": "object",
+    "properties": {
+        "hashType": {
+            "type": "string",
+            "description": "Type of the hash used for the secure boot entry.",
+            "enum": [
+                "SHA256"
+            ]
+        },
+        "hash": {
+            "type": "string",
+            "hashType": "SHA256",
+            "description": "authenticode hash of the entry.",
+            "pattern": "^[a-fA-F0-9]{64}$"
+        },
+        "authority": {
+            "type": "string",
+            "description": "Authority that issued the hash."
+        }
+    }
+}
