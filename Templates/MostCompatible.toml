@@ -1,0 +1,92 @@
+# @file
+# Template Name: Most Compatible – Microsoft and 3rd Party
+# Description:
+#  This template is the most compatible template however it is the least secure. This template will allow for anything
+#  signed by the 2011 CAs or the 2023 CAs to execute. This template is not recommended for
+#  secure systems however will allow for Windows and Linux to boot with secure boot enabled.
+#
+# Copyright (C) Microsoft Corporation
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+################################
+# Default PK File Entry        #
+################################
+[PK]
+help = "Contains the Microsoft PK to enable signature database updates and binary execution."
+
+[[PK.files]]
+path = "PreSignedObjects/PK/Certificate/WindowsOEMDevicesPK.der"
+sha1 = 0x3D8660C0CB2D57B189C3D7995572A552F75E48B5
+signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
+description = "Platform Key (owner) who may authorize changes to the KEK Variable"
+
+###################################
+# Default Kek File Entries        #
+###################################
+[KEK]
+help = "Contains the Microsoft KEKs to enable signature database updates and binary execution."
+
+[[KEK.files]]
+path = "PreSignedObjects/KEK/Certificates/microsoft corporation kek 2k ca 2023.der"
+url = "https://go.microsoft.com/fwlink/?linkid=2239775"
+sha1 = 0x459ab6fb5e284d272d5e3e6abc8ed663829d632b
+signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
+description = "2023+ Microsoft Authorizes Signature Database Updates"
+
+##################################
+# Default Db File Entries        #
+##################################
+[DB]
+help = "Contains 2023 Microsoft and UEFI third party certificates to verify binaries before execution. Most Compatible."
+
+[[DB.files]]
+path = "PreSignedObjects/DB/Certificates/windows uefi ca 2023.der"
+url = "https://go.microsoft.com/fwlink/?linkid=2239776"
+sha1 = 0x45a0fa32604773c82433c3b7d59e7466b3ac0c67
+signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
+description = "2023+ signed Windows Boot Media (e.g. 2023 signed Windows)"
+
+[[DB.files]]
+path = "PreSignedObjects/DB/Certificates/microsoft uefi ca 2023.der"
+url = "https://go.microsoft.com/fwlink/?linkid=2239872"
+sha1 = 0xb5eeb4a6706048073f0ed296e7f580a790b59eaa
+signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
+description = "2023+ signed Third-Party UEFI CA Signed Applications (e.g. 2023 signed Linux)"
+
+[[DB.files]]
+path = "PreSignedObjects/DB/Certificates/microsoft option rom uefi ca 2023.der"
+url = "http://www.microsoft.com/pkiops/certs/microsoft%20option%20rom%20uefi%20ca%202023.crt"
+sha1 = 0x3FB39E2B8BD183BF9E4594E72183CA60AFCD4277
+signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
+description = "2023+ signed UEFI Third-Party Option ROMs (e.g. Graphics/Storage/Networking Drivers)"
+
+[[DB.files]]
+path = "PreSignedObjects/DB/Certificates/MicWinProPCA2011_2011-10-19.der"
+url = "https://go.microsoft.com/fwlink/p/?linkid=321192"
+sha1 = 0x580a6f4cc4e4b669b9ebdc1b2b3e087b80d0678d
+signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
+description = "2011 signed Windows Boot Media (e.g. 2011 signed Windows)"
+
+[[DB.files]]
+path = "PreSignedObjects/DB/Certificates/MicCorUEFCA2011_2011-06-27.der"
+url = "https://go.microsoft.com/fwlink/p/?linkid=321194"
+sha1 = 0x46def63b5ce61cf8ba0de2e6639c1019d0ed14f3
+signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
+description = "2011 signed Third-Party UEFI Applications and Third-Party Option ROMs (e.g. 2011+ Linux and Graphics/Storage/Networking Drivers)"
+
+############################
+# Default Dbx File Entries #
+############################
+[DBX]
+help = "Contains a list of revoked certificates that will not execute on this system. Filtered per Architecture (ARM, Intel)."
+
+[[DBX.files]]
+#
+# New recommendation is to allow the OS to manage the dbx and not ship a DefaultDbx with the firmware.
+# A valid configuration is to ship an unset DBX variable.
+#
+path = "PreSignedObjects/DBX/dbx.empty"
+sha1 = 0xF8D326CCD9233747A29E2F67AFEB77C25787BD39
+signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
+description =  "Special file to create an empty signature database."
