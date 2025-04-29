@@ -4,6 +4,11 @@
     "description": "This schema defines the format for certificates used in secure boot.",
     "type": "object",
     "properties": {
+        "type": {
+            "type": "string",
+            "description": "Type of the certificate.",
+            "enum": ["X.509", "TBS"]
+        },
         "commonName": {
             "type": "string",
             "description": "The common name of the certificate."

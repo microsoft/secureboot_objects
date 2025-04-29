@@ -38,6 +38,7 @@
                     }
                 },
                 "Certificate": {
+                    "type": "X.509",
                     "commonName": "CN = NOT A REAL CA",
                     "issuer": "CN = NOT A REAL CA",
                     "sha256": "0000000000000000000000000000000000000000000000000000000000000000",

@@ -1,8 +1,14 @@
 
 import json
+import logging
 
 import jsonschema
 from jsonschema import RefResolver
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 
 with open("dbx_revocation_schema.json", "r") as f:
     dbx_revocation_schema = json.load(f)
@@ -16,10 +22,6 @@ with open("SecureBootDataTypes/hash_schema.json", "r") as f:
 # Example JSON data based on the provided schema
 with open("example.json", "r") as f:
     example_data = json.load(f)
-    print(example_data)
-
-# Validate the example data against the DBX Revocation Schema
-
 
 
 # Create a resolver to handle references within the schemas
@@ -34,9 +36,5 @@ resolver = RefResolver(
 )
 
 
-# Validate the example data against the DBX Revocation Schema
-#try:
 jsonschema.validate(instance=example_data, schema=dbx_revocation_schema, resolver=resolver)
-print("Example data is valid according to the DBX Revocation Schema.")
-#except jsonschema.exceptions.ValidationError as e:
-#    print(f"Example data is invalid according to the DBX Revocation Schema: {e.message}")
+logger.info("Example data is valid according to the DBX Revocation Schema.")
