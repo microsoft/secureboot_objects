@@ -55,7 +55,7 @@ def get_signing_certificate(signed_data: bytes) -> bytes:
         raise ValueError("No certificates found in the SignedData structure")
 
     signer_infos = signed_data.getComponentByName("signerInfos")
-    if signer_infos is None or len(signer_infos) == 0:
+    if not signer_infos:
         raise ValueError("No signer information found in the SignedData structure")
 
     signer_info = signer_infos[0]
