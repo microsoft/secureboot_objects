@@ -61,6 +61,9 @@ jobs:
     - name: Build Compatible Defaults Template (2023 MSFT + 2023 3P + 2023 OROM)
       run: python scripts/secure_boot_default_keys.py --keystore Templates/MicrosoftAndThirdParty.toml -o FirmwareArtifacts
 
+    - name: Build X86 / X64 / ARM Binaries
+      run: python scripts/secure_boot_default_keys.py --keystore Templates/LegacyFirmwareDefaults.toml -o FirmwareArtifacts
+
     - name: Upload Firmware Binaries as Artifacts
       uses: actions/upload-artifact@v4
       with:
