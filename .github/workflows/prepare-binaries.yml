@@ -34,6 +34,15 @@ jobs:
     - name: Checkout Self
       uses: actions/checkout@v4
 
+    - name: Generate Token
+      if: github.event_name == 'release'
+      id: app-token
+      uses: actions/create-github-app-token@v2
+      with:
+        app-id: ${{ vars.MU_ACCESS_APP_ID }}
+        private-key: ${{ secrets.MU_ACCESS_APP_PRIVATE_KEY }}
+        owner: ${{ github.repository_owner }}
+
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
@@ -79,7 +88,7 @@ jobs:
       if: startsWith(github.ref, 'refs/tags/') && !endsWith(github.event.release.tag_name, '-signed')
       with:
         files: ReleaseFirmwareArchive/*
-        token: ${{ secrets.GH_UEFI_BOT_PUBLISH_TOKEN }}
+        token: ${{ steps.app-token.outputs.token }}
 
     - name: Prepare Release Signed Archive
       run: python scripts/prepare_signed_binaries.py PostSignedObjects --output ReleaseSignedArtifacts --version ${{ github.event.release.tag_name }}
@@ -90,4 +99,4 @@ jobs:
       if: startsWith(github.ref, 'refs/tags/') && endsWith(github.event.release.tag_name, '-signed')
       with:
         files: ReleaseSignedArtifacts/*
-        token: ${{ secrets.GH_UEFI_BOT_PUBLISH_TOKEN }}
+        token: ${{ steps.app-token.outputs.token   }}
