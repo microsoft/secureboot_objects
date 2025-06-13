@@ -56,7 +56,8 @@ jobs:
         Write-Host "✅ Found target script: $scriptToTest" -ForegroundColor Green
         
         # Execute the validation tests
-        $exitCode = & $testScript -ScriptPath $scriptToTest
+        & $testScript -ScriptPath $scriptToTest
+        $exitCode = $LASTEXITCODE
         
         if ($exitCode -eq 0) {
           Write-Host "🎉 All validation tests passed!" -ForegroundColor Green
