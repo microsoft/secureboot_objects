@@ -722,7 +722,7 @@ function Create-ISOMedia {
     # Generate a timestamp string in the following format: mm/dd/yyyy,hh:mm:ss
     $timestamp = Get-Date -Format "MM/dd/yyyy,HH:mm:ss"
 
-    $runCommand = "-l$global:ISO_Label -t$timestamp -bootdata:2#p0,e,b$global:Temp_Media_To_Update_Path\boot\etfsboot.com#pEF,e,b$global:Temp_Media_To_Update_Path\efi\microsoft\boot\efisys_ex.bin -u2 -udfver102 -o $global:Temp_Media_To_Update_Path $ISOPath"
+    $runCommand = "-l$global:ISO_Label -t$timestamp -bootdata:2#p0,e,b$global:Temp_Media_To_Update_Path\boot\etfsboot.com#pEF,e,b$global:Temp_Media_To_Update_Path\efi\microsoft\boot\efisys_ex.bin -u2 -udfver102 -o $global:Temp_Media_To_Update_Path `"$($ISOPath)`""
 
     Write-Dbg-Host "Running: $global:oscdimg_exe $runCommand"
     try {
