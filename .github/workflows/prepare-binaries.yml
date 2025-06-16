@@ -61,6 +61,9 @@ jobs:
     - name: Run Unit Tests
       run: pytest scripts/
 
+    - name: Validate DBX Certificate References
+      run: python scripts/validate_dbx_references.py PreSignedObjects/DBX
+
     - name: Build Microsoft Only Defaults Template (2023 MSFT)
       run: python scripts/secure_boot_default_keys.py --keystore Templates/MicrosoftOnly.toml -o FirmwareArtifacts
 
