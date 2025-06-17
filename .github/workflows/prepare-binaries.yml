@@ -34,6 +34,15 @@ jobs:
     - name: Checkout Self
       uses: actions/checkout@v4
 
+    - name: Generate Token
+      if: github.event_name == 'release'
+      id: app-token
+      uses: actions/create-github-app-token@v2
+      with:
+        app-id: ${{ vars.MU_ACCESS_APP_ID }}
+        private-key: ${{ secrets.MU_ACCESS_APP_PRIVATE_KEY }}
+        owner: ${{ github.repository_owner }}
+
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
@@ -52,6 +61,9 @@ jobs:
     - name: Run Unit Tests
       run: pytest scripts/
 
+    - name: Validate DBX Certificate References
+      run: python scripts/validate_dbx_references.py PreSignedObjects/DBX
+
     - name: Build Microsoft Only Defaults Template (2023 MSFT)
       run: python scripts/secure_boot_default_keys.py --keystore Templates/MicrosoftOnly.toml -o FirmwareArtifacts
 
@@ -60,6 +72,9 @@ jobs:
 
     - name: Build Compatible Defaults Template (2023 MSFT + 2023 3P + 2023 OROM)
       run: python scripts/secure_boot_default_keys.py --keystore Templates/MicrosoftAndThirdParty.toml -o FirmwareArtifacts
+
+    - name: Build X86 / X64 / ARM Binaries
+      run: python scripts/secure_boot_default_keys.py --keystore Templates/LegacyFirmwareDefaults.toml -o FirmwareArtifacts
 
     - name: Upload Firmware Binaries as Artifacts
       uses: actions/upload-artifact@v4
@@ -76,7 +91,7 @@ jobs:
       if: startsWith(github.ref, 'refs/tags/') && !endsWith(github.event.release.tag_name, '-signed')
       with:
         files: ReleaseFirmwareArchive/*
-        token: ${{ secrets.GH_UEFI_BOT_PUBLISH_TOKEN }}
+        token: ${{ steps.app-token.outputs.token }}
 
     - name: Prepare Release Signed Archive
       run: python scripts/prepare_signed_binaries.py PostSignedObjects --output ReleaseSignedArtifacts --version ${{ github.event.release.tag_name }}
@@ -87,4 +102,4 @@ jobs:
       if: startsWith(github.ref, 'refs/tags/') && endsWith(github.event.release.tag_name, '-signed')
       with:
         files: ReleaseSignedArtifacts/*
-        token: ${{ secrets.GH_UEFI_BOT_PUBLISH_TOKEN }}
+        token: ${{ steps.app-token.outputs.token   }}
