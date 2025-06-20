@@ -17,6 +17,7 @@ from pathlib import Path
 from tempfile import TemporaryFile
 from typing import Union
 
+from cryptography import x509
 from edk2toollib.uefi.authenticated_variables_structure_support import (
     EfiSignatureDataEfiCertSha256,
     EfiSignatureDataEfiCertX509,
@@ -34,6 +35,45 @@ ARCH_MAP = {"64-bit": "x64", "32-bit": "ia32", "32-bit ARM": "arm", "64-bit ARM"
 FIRMWARE_INFORMATION = (pathlib.Path(__file__).parent / "information" / "firmware_defaults_information.md").read_text()
 IMAGING_INFORMATION = (pathlib.Path(__file__).parent / "information" / "imaging_binaries_information.md").read_text()
 LICENSE = (pathlib.Path(__file__).parent / "information" / "prebuilt_binaries_license.md").read_text()
+
+def _extract_certificate_subject_names(cert_paths: list) -> set:
+    """Extract subject names from certificate files.
+
+    Args:
+        cert_paths: List of certificate file paths
+
+    Returns:
+        set: Set of subject names in multiple formats for flexible matching
+    """
+    subject_names = set()
+    for cert_path in cert_paths:
+        try:
+            with open(cert_path, 'rb') as f:
+                cert_data = f.read()
+
+            # Handle both PEM and DER formats
+            if _is_pem_encoded(cert_data):
+                cert_data = _convert_pem_to_der(cert_data)
+
+            cert = x509.load_der_x509_certificate(cert_data)
+
+            # Add full RFC4514 format
+            full_subject = cert.subject.rfc4514_string()
+            subject_names.add(full_subject)
+
+            # Add simplified "CN = " format used in DBX JSON files
+            cn_attrs = cert.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
+            if cn_attrs:
+                cn_value = cn_attrs[0].value
+                simplified_subject = f"CN = {cn_value}"
+                subject_names.add(simplified_subject)
+
+            logging.debug(f"Extracted subjects from {cert_path}: {full_subject}, {simplified_subject}")
+        except Exception as e:
+            logging.warning(f"Failed to extract subject from {cert_path}: {e}")
+
+    return subject_names
+
 
 def _is_pem_encoded(certificate_data: Union[str, bytes]) -> bool:
     """This function is used to check if a certificate is pem encoded (base64 encoded).
@@ -197,13 +237,18 @@ def _convert_csv_to_signature_list(file: str, signature_owner: str, target_arch:
 
     return siglist.encode()
 
-def _convert_json_to_signature_list(file: str, signature_owner: str, target_arch: str = None, **kwargs: any) -> bytes:
+def _convert_json_to_signature_list(
+    file: str, signature_owner: str, target_arch: str = None,
+    filter_by_authority: bool = False, authorized_subjects: set = None, **kwargs: any
+) -> bytes:
     """Converts a JSON file containing image hashes to an EFI signature list.
 
     Args:
         file (str): The path to the JSON file containing the image hashes.
         signature_owner (str): The UUID of the signature owner. If not a UUID instance, it will be converted.
         target_arch (str, optional): The target architecture to filter the hashes. Defaults to None.
+        filter_by_authority (bool, optional): Whether to filter hashes by signing authority. Defaults to False.
+        authorized_subjects (set, optional): Set of authorized certificate subject names. Defaults to None.
         **kwargs (any): Additional keyword arguments.
 
     Returns:
@@ -238,12 +283,16 @@ def _convert_json_to_signature_list(file: str, signature_owner: str, target_arch
     with open(file, "r") as json_file:
         data = json.load(json_file)
         hashes = data["images"]
+        total_entries = 0
+        filtered_entries = 0
+
         for arch in hashes:
             if target_arch is not None and arch != target_arch:
                 logging.debug(f"Skipping {arch} because it is not in the target architectures.")
                 continue
 
             for hash in hashes[arch]:
+                total_entries += 1
                 authenticode_hash = hash["authenticodeHash"]
 
                 # Check if the hash type is SHA256
@@ -251,11 +300,25 @@ def _convert_json_to_signature_list(file: str, signature_owner: str, target_arch
                 if hash["hashType"] != "SHA256":
                     raise ValueError(f"Invalid hash type: {hash['hashType']}")
 
+                # Filter by signing authority if enabled
+                if filter_by_authority and authorized_subjects is not None:
+                    signing_authority = hash.get("signingAuthority", "")
+                    if signing_authority and signing_authority not in authorized_subjects:
+                        logging.debug(
+                            f"Filtering out hash {authenticode_hash} - "
+                            f"authority '{signing_authority}' not in DB"
+                        )
+                        filtered_entries += 1
+                        continue
+
                 sigdata = EfiSignatureDataEfiCertSha256(
                     None, None, bytearray.fromhex(authenticode_hash), sigowner=signature_owner
                 )
 
                 siglist.AddSignatureData(sigdata)
+
+        if filter_by_authority:
+            logging.info(f"DBX filtering: {filtered_entries} of {total_entries} entries filtered out")
 
     return siglist.encode()
 
@@ -325,11 +388,12 @@ def _create_time_based_payload(esl_payload: bytes) -> bytes:
     return header + esl_payload
 
 
-def build_default_keys(keystore: dict) -> dict:
+def build_default_keys(keystore: dict, filter_dbx_by_authority: bool = False) -> dict:
     """This function is used to build the default keys for secure boot.
 
     Args:
         keystore: A [variable, arch] keyed dictionary containing the matching file in hex format
+        filter_dbx_by_authority: Whether to filter DBX entries by DB certificate authorities
 
     Returns:
         a dictionary containing the hex representation of the file
@@ -338,6 +402,18 @@ def build_default_keys(keystore: dict) -> dict:
     logging.info("Building default keys for secure boot.")
 
     default_keys = {}
+
+    # Collect DB certificate subject names for filtering if enabled
+    db_certificate_subjects = set()
+    if filter_dbx_by_authority and 'DB' in keystore:
+        db_cert_paths = []
+        for file_dict in keystore['DB']['files']:
+            file_path = Path(file_dict["path"])
+            if file_path.suffix.lower() in ['.crt', '.der']:
+                db_cert_paths.append(str(file_path))
+
+        db_certificate_subjects = _extract_certificate_subject_names(db_cert_paths)
+        logging.info(f"Extracted {len(db_certificate_subjects)} certificate subjects from DB for filtering")
 
     # Add handlers here for different file types.
     file_handler = {
@@ -383,7 +459,21 @@ def build_default_keys(keystore: dict) -> dict:
 
                 logging.info("Converting %s to signature list.", file_path)
 
-                signature_database += convert_handler(file=file_path, signature_owner=signature_owner, target_arch=arch)
+                # Pass filtering parameters for JSON files processing DBX variable
+                if file_ext == ".json" and variable == "DBX" and filter_dbx_by_authority:
+                    signature_database += convert_handler(
+                        file=file_path,
+                        signature_owner=signature_owner,
+                        target_arch=arch,
+                        filter_by_authority=True,
+                        authorized_subjects=db_certificate_subjects
+                    )
+                else:
+                    signature_database += convert_handler(
+                        file=file_path,
+                        signature_owner=signature_owner,
+                        target_arch=arch
+                    )
 
                 logging.info("Appended %s to signature database for variable %s.", file_path, variable)
 
@@ -490,6 +580,11 @@ def main() -> int:
         default=pathlib.Path.cwd() / "Artifacts",
         help="The output directory for the default keys.",
     )
+    parser.add_argument(
+        "--necessary-dbx-entries-only",
+        action="store_true",
+        help="Only include DBX entries whose signing authority is present in the DB certificates to conserve space.",
+    )
     args = parser.parse_args()
 
     with open(args.keystore, "rb") as f:
@@ -502,7 +597,7 @@ def main() -> int:
         template_name = os.path.basename(args.keystore).split('.')[0]
 
         # Build the default key binaries; filters on requested architectures in the configuration file.
-        default_keys = build_default_keys(keystore)
+        default_keys = build_default_keys(keystore, filter_dbx_by_authority=args.necessary_dbx_entries_only)
 
         # Write the keys to the output directory and create a README.md file for each architecture.
         for key, value in default_keys.items():
