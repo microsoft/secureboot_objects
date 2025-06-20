@@ -23,10 +23,10 @@ description = "Revoked CA certificate - hashes signed by this CA will be filtere
 path = "PreSignedObjects/DBX/dbx_hashes.json"
 signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
 description = "DBX hashes - those signed by revoked CAs will be filtered out"
-# Optional: Keep specific critical hashes even if their CA is revoked
-keep_hashes_override = [
-    "80B4D96931BF0D02FD91A61E19D14F1DA452E66DB2408CA8604D411F92659F0A",
-    "F52F83A3FA9CFBD6920F722824DBE4034534D25B8507246B3B957DAC6E1BCE7A"
+# Optional: Allow any hashes from specific CAs to be kept even if that CA is revoked
+allow_hashes_by_ca = [
+    "Microsoft Corporation UEFI CA 2011",
+    "VeriSign Class 3 Public Primary Certification Authority"
 ]
 
 # Example 3: Another revoked CA

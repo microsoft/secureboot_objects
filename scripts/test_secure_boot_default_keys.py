@@ -220,16 +220,16 @@ class TestSecureBootDefaultKeys(unittest.TestCase):
                 json.dump(json_data, f)
 
             revoked_ca_subjects = {"CN = Revoked Authority"}
-            keep_hashes_override = {"80B4D96931BF0D02FD91A61E19D14F1DA452E66DB2408CA8604D411F92659F0A"}
+            allow_hashes_by_ca = {"Microsoft Corporation UEFI CA 2011"}
 
-            # Test with CA revocation filtering and override - should keep the overridden hash
+            # Test with CA revocation filtering and CA-based override - should keep hashes from allowed CAs
             result = _convert_json_to_signature_list(
                 str(json_file),
                 "77fa9abd-0359-4d32-bd60-28f4e78f784b",
                 target_arch="x64",
                 exclude_revoked_ca_hashes=True,
                 revoked_ca_subjects=revoked_ca_subjects,
-                keep_hashes_override=keep_hashes_override
+                allow_hashes_by_ca=allow_hashes_by_ca
             )
             self.assertIsInstance(result, bytes)
             self.assertGreater(len(result), 0)

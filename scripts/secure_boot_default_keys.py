@@ -241,7 +241,7 @@ def _convert_json_to_signature_list(
     file: str, signature_owner: str, target_arch: str = None,
     filter_by_authority: bool = False, authorized_subjects: set = None,
     exclude_revoked_ca_hashes: bool = False, revoked_ca_subjects: set = None,
-    keep_hashes_override: set = None, **kwargs: any
+    allow_hashes_by_ca: set = None, **kwargs: any
 ) -> bytes:
     """Converts a JSON file containing image hashes to an EFI signature list.
 
@@ -253,7 +253,7 @@ def _convert_json_to_signature_list(
         authorized_subjects (set, optional): Set of authorized certificate subject names. Defaults to None.
         exclude_revoked_ca_hashes (bool, optional): Whether to exclude hashes signed by revoked CAs. Defaults to False.
         revoked_ca_subjects (set, optional): Set of revoked CA certificate subject names. Defaults to None.
-        keep_hashes_override (set, optional): Set of hash values to keep even if their CA is revoked. Defaults to None.
+        allow_hashes_by_ca (set, optional): Set of CA names whose hashes should be kept even if revoked. Defaults to None.
         **kwargs (any): Additional keyword arguments.
 
     Returns:
@@ -308,14 +308,17 @@ def _convert_json_to_signature_list(
 
                 signing_authority = hash.get("signingAuthority", "")
 
-                # Check if hash should be kept via override (takes precedence)
-                if keep_hashes_override and authenticode_hash in keep_hashes_override:
-                    logging.debug(f"Keeping hash {authenticode_hash} due to override despite CA revocation")
-                    sigdata = EfiSignatureDataEfiCertSha256(
-                        None, None, bytearray.fromhex(authenticode_hash), sigowner=signature_owner
-                    )
-                    siglist.AddSignatureData(sigdata)
-                    continue
+                # Check if hash should be kept via CA-based override (takes precedence)
+                if allow_hashes_by_ca and signing_authority:
+                    # Check if the signing authority matches any of the allowed CAs
+                    ca_allowed = any(ca_name in signing_authority for ca_name in allow_hashes_by_ca)
+                    if ca_allowed:
+                        logging.debug(f"Keeping hash {authenticode_hash} - signed by allowed CA: '{signing_authority}'")
+                        sigdata = EfiSignatureDataEfiCertSha256(
+                            None, None, bytearray.fromhex(authenticode_hash), sigowner=signature_owner
+                        )
+                        siglist.AddSignatureData(sigdata)
+                        continue
 
                 # Filter by revoked CA if enabled (done first, before authority filtering)
                 if exclude_revoked_ca_hashes and revoked_ca_subjects is not None:
@@ -509,8 +512,8 @@ def build_default_keys(
 
                 # Pass filtering parameters for JSON files processing DBX variable
                 if file_ext == ".json" and variable == "DBX":
-                    # Get override hashes from the file configuration if present
-                    keep_hashes_override = set(file_dict.get("keep_hashes_override", []))
+                    # Get override CAs from the file configuration if present
+                    allow_hashes_by_ca = set(file_dict.get("allow_hashes_by_ca", []))
 
                     if filter_dbx_by_authority or exclude_revoked_ca_hashes:
                         signature_database += convert_handler(
@@ -521,7 +524,7 @@ def build_default_keys(
                             authorized_subjects=db_certificate_subjects,
                             exclude_revoked_ca_hashes=exclude_revoked_ca_hashes,
                             revoked_ca_subjects=dbx_certificate_subjects,
-                            keep_hashes_override=keep_hashes_override
+                            allow_hashes_by_ca=allow_hashes_by_ca
                         )
                     else:
                         signature_database += convert_handler(

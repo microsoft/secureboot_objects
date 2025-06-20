@@ -1,0 +1,59 @@
+# Real-World Demonstration: Microsoft CA Revocation
+# This template demonstrates space savings by revoking multiple Microsoft CAs
+# and removing all hashes signed by them from the DBX.
+#
+# Based on analysis of the existing DBX data:
+# - Total DBX entries: 430
+# - Entries signed by "CN = Microsoft Corporation UEFI CA 2011": 228 (53%)
+# - Entries signed by "CN = Microsoft Windows Production PCA 2011": 173 (40%)
+# - Combined: 401 entries (93% of all DBX entries)
+# - Expected space savings: ~90%+ reduction in DBX size
+#
+# Usage:
+#   python3 scripts/secure_boot_default_keys.py --keystore Templates/RealWorldCARevocationDemo.toml -o output/ --exclude-revoked-ca-hashes
+
+[DBX]
+help = "Real-world demonstration of CA revocation feature using existing Microsoft DBX data."
+
+# The Microsoft Corporation UEFI CA 2011 - placing this in DBX revokes the CA
+[[DBX.files]]
+path = "PreSignedObjects/DB/Certificates/MicCorUEFCA2011_2011-06-27.der"
+signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
+description = "Microsoft Corporation UEFI CA 2011 - REVOKED for demonstration (affects 228 hashes)"
+
+# The Microsoft Windows Production PCA 2011 - placing this in DBX revokes the entire CA
+[[DBX.files]]
+path = "PreSignedObjects/DBX/Certificates/MicWinProPCA2011_2011-10-19.der"
+signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
+description = "Microsoft Windows Production PCA 2011 - REVOKED for demonstration (affects 173 hashes)"
+
+# The existing Microsoft DBX hash list - will be filtered to remove Microsoft-signed hashes
+[[DBX.files]]
+path = "PreSignedObjects/DBX/dbx_info_msft_06_10_25.json"
+signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
+description = "Microsoft DBX hashes - Microsoft-signed entries will be removed due to CA revocation"
+
+# Example of the minimal DB setup for testing
+[DB]
+help = "Minimal DB setup for testing - contains essential certificates for basic functionality."
+
+[[DB.files]]
+path = "PreSignedObjects/DB/Certificates/MicWinProPCA2011_2011-10-19.der"
+signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
+description = "Microsoft Windows Production PCA 2011 - normally in DB but will be revoked"
+
+[PK]
+help = "Platform Key for testing"
+
+[[PK.files]]
+path = "PreSignedObjects/PK/Certificate/WindowsOEMDevicesPK.der"
+signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
+description = "Windows OEM Devices Platform Key"
+
+[KEK]
+help = "Key Exchange Key for testing"
+
+[[KEK.files]]
+path = "PreSignedObjects/KEK/Certificates/MicCorKEKCA2011_2011-06-24.der"
+signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
+description = "Microsoft Corporation KEK CA 2011"
