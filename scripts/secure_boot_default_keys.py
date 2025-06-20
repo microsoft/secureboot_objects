@@ -239,7 +239,9 @@ def _convert_csv_to_signature_list(file: str, signature_owner: str, target_arch:
 
 def _convert_json_to_signature_list(
     file: str, signature_owner: str, target_arch: str = None,
-    filter_by_authority: bool = False, authorized_subjects: set = None, **kwargs: any
+    filter_by_authority: bool = False, authorized_subjects: set = None,
+    exclude_revoked_ca_hashes: bool = False, revoked_ca_subjects: set = None,
+    keep_hashes_override: set = None, **kwargs: any
 ) -> bytes:
     """Converts a JSON file containing image hashes to an EFI signature list.
 
@@ -249,6 +251,9 @@ def _convert_json_to_signature_list(
         target_arch (str, optional): The target architecture to filter the hashes. Defaults to None.
         filter_by_authority (bool, optional): Whether to filter hashes by signing authority. Defaults to False.
         authorized_subjects (set, optional): Set of authorized certificate subject names. Defaults to None.
+        exclude_revoked_ca_hashes (bool, optional): Whether to exclude hashes signed by revoked CAs. Defaults to False.
+        revoked_ca_subjects (set, optional): Set of revoked CA certificate subject names. Defaults to None.
+        keep_hashes_override (set, optional): Set of hash values to keep even if their CA is revoked. Defaults to None.
         **kwargs (any): Additional keyword arguments.
 
     Returns:
@@ -285,6 +290,7 @@ def _convert_json_to_signature_list(
         hashes = data["images"]
         total_entries = 0
         filtered_entries = 0
+        revoked_ca_entries = 0
 
         for arch in hashes:
             if target_arch is not None and arch != target_arch:
@@ -300,9 +306,29 @@ def _convert_json_to_signature_list(
                 if hash["hashType"] != "SHA256":
                     raise ValueError(f"Invalid hash type: {hash['hashType']}")
 
+                signing_authority = hash.get("signingAuthority", "")
+
+                # Check if hash should be kept via override (takes precedence)
+                if keep_hashes_override and authenticode_hash in keep_hashes_override:
+                    logging.debug(f"Keeping hash {authenticode_hash} due to override despite CA revocation")
+                    sigdata = EfiSignatureDataEfiCertSha256(
+                        None, None, bytearray.fromhex(authenticode_hash), sigowner=signature_owner
+                    )
+                    siglist.AddSignatureData(sigdata)
+                    continue
+
+                # Filter by revoked CA if enabled (done first, before authority filtering)
+                if exclude_revoked_ca_hashes and revoked_ca_subjects is not None:
+                    if signing_authority and signing_authority in revoked_ca_subjects:
+                        logging.warning(
+                            f"Removing hash {authenticode_hash} (file: {hash.get('filename', 'unknown')}) - "
+                            f"signed by revoked CA: '{signing_authority}'"
+                        )
+                        revoked_ca_entries += 1
+                        continue
+
                 # Filter by signing authority if enabled
                 if filter_by_authority and authorized_subjects is not None:
-                    signing_authority = hash.get("signingAuthority", "")
                     if signing_authority and signing_authority not in authorized_subjects:
                         logging.debug(
                             f"Filtering out hash {authenticode_hash} - "
@@ -316,6 +342,11 @@ def _convert_json_to_signature_list(
                 )
 
                 siglist.AddSignatureData(sigdata)
+
+        if exclude_revoked_ca_hashes and revoked_ca_entries > 0:
+            logging.warning(
+                f"CA revocation filtering: {revoked_ca_entries} of {total_entries} entries removed due to revoked CA"
+            )
 
         if filter_by_authority:
             logging.info(f"DBX filtering: {filtered_entries} of {total_entries} entries filtered out")
@@ -388,12 +419,15 @@ def _create_time_based_payload(esl_payload: bytes) -> bytes:
     return header + esl_payload
 
 
-def build_default_keys(keystore: dict, filter_dbx_by_authority: bool = False) -> dict:
+def build_default_keys(
+    keystore: dict, filter_dbx_by_authority: bool = False, exclude_revoked_ca_hashes: bool = False
+) -> dict:
     """This function is used to build the default keys for secure boot.
 
     Args:
         keystore: A [variable, arch] keyed dictionary containing the matching file in hex format
         filter_dbx_by_authority: Whether to filter DBX entries by DB certificate authorities
+        exclude_revoked_ca_hashes: Whether to exclude hashes signed by revoked CAs in DBX
 
     Returns:
         a dictionary containing the hex representation of the file
@@ -414,6 +448,20 @@ def build_default_keys(keystore: dict, filter_dbx_by_authority: bool = False) ->
 
         db_certificate_subjects = _extract_certificate_subject_names(db_cert_paths)
         logging.info(f"Extracted {len(db_certificate_subjects)} certificate subjects from DB for filtering")
+
+    # Collect DBX certificate subject names for CA revocation filtering if enabled
+    dbx_certificate_subjects = set()
+    if exclude_revoked_ca_hashes and 'DBX' in keystore:
+        dbx_cert_paths = []
+        for file_dict in keystore['DBX']['files']:
+            file_path = Path(file_dict["path"])
+            if file_path.suffix.lower() in ['.crt', '.der']:
+                dbx_cert_paths.append(str(file_path))
+
+        dbx_certificate_subjects = _extract_certificate_subject_names(dbx_cert_paths)
+        logging.info(
+            f"Extracted {len(dbx_certificate_subjects)} certificate subjects from DBX for CA revocation filtering"
+        )
 
     # Add handlers here for different file types.
     file_handler = {
@@ -460,14 +508,27 @@ def build_default_keys(keystore: dict, filter_dbx_by_authority: bool = False) ->
                 logging.info("Converting %s to signature list.", file_path)
 
                 # Pass filtering parameters for JSON files processing DBX variable
-                if file_ext == ".json" and variable == "DBX" and filter_dbx_by_authority:
-                    signature_database += convert_handler(
-                        file=file_path,
-                        signature_owner=signature_owner,
-                        target_arch=arch,
-                        filter_by_authority=True,
-                        authorized_subjects=db_certificate_subjects
-                    )
+                if file_ext == ".json" and variable == "DBX":
+                    # Get override hashes from the file configuration if present
+                    keep_hashes_override = set(file_dict.get("keep_hashes_override", []))
+
+                    if filter_dbx_by_authority or exclude_revoked_ca_hashes:
+                        signature_database += convert_handler(
+                            file=file_path,
+                            signature_owner=signature_owner,
+                            target_arch=arch,
+                            filter_by_authority=filter_dbx_by_authority,
+                            authorized_subjects=db_certificate_subjects,
+                            exclude_revoked_ca_hashes=exclude_revoked_ca_hashes,
+                            revoked_ca_subjects=dbx_certificate_subjects,
+                            keep_hashes_override=keep_hashes_override
+                        )
+                    else:
+                        signature_database += convert_handler(
+                            file=file_path,
+                            signature_owner=signature_owner,
+                            target_arch=arch
+                        )
                 else:
                     signature_database += convert_handler(
                         file=file_path,
@@ -585,6 +646,11 @@ def main() -> int:
         action="store_true",
         help="Only include DBX entries whose signing authority is present in the DB certificates to conserve space.",
     )
+    parser.add_argument(
+        "--exclude-revoked-ca-hashes",
+        action="store_true",
+        help="Exclude DBX hash entries that are signed by CAs present in DBX certificates (revoked CAs).",
+    )
     args = parser.parse_args()
 
     with open(args.keystore, "rb") as f:
@@ -597,7 +663,11 @@ def main() -> int:
         template_name = os.path.basename(args.keystore).split('.')[0]
 
         # Build the default key binaries; filters on requested architectures in the configuration file.
-        default_keys = build_default_keys(keystore, filter_dbx_by_authority=args.necessary_dbx_entries_only)
+        default_keys = build_default_keys(
+            keystore,
+            filter_dbx_by_authority=args.necessary_dbx_entries_only,
+            exclude_revoked_ca_hashes=args.exclude_revoked_ca_hashes
+        )
 
         # Write the keys to the output directory and create a README.md file for each architecture.
         for key, value in default_keys.items():

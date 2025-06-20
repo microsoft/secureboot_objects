@@ -1,0 +1,36 @@
+# Example Template: CA Revocation Feature Demo
+# This template demonstrates the new CA revocation filtering feature.
+# 
+# When --exclude-revoked-ca-hashes is used:
+# 1. DBX certificate files (.crt/.der) are identified as revoked CAs
+# 2. DBX JSON hash files are filtered to remove any hashes signed by those revoked CAs
+# 3. Optional override lists can keep specific hashes even if their CA is revoked
+#
+# Usage:
+#   python3 scripts/secure_boot_default_keys.py --keystore this_template.toml -o output/ --exclude-revoked-ca-hashes
+
+[DBX]
+help = "Contains revoked certificates and hashes. The new feature can filter hashes signed by revoked CAs."
+
+# Example 1: A certificate that's been revoked
+[[DBX.files]]
+path = "PreSignedObjects/DBX/SomeRevokedCA.der"
+signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
+description = "Revoked CA certificate - hashes signed by this CA will be filtered out"
+
+# Example 2: A JSON file with hashes, some of which may be signed by the revoked CA above
+[[DBX.files]]
+path = "PreSignedObjects/DBX/dbx_hashes.json"
+signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
+description = "DBX hashes - those signed by revoked CAs will be filtered out"
+# Optional: Keep specific critical hashes even if their CA is revoked
+keep_hashes_override = [
+    "80B4D96931BF0D02FD91A61E19D14F1DA452E66DB2408CA8604D411F92659F0A",
+    "F52F83A3FA9CFBD6920F722824DBE4034534D25B8507246B3B957DAC6E1BCE7A"
+]
+
+# Example 3: Another revoked CA
+[[DBX.files]]
+path = "PreSignedObjects/DBX/AnotherRevokedCA.crt"
+signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
+description = "Another revoked CA certificate"
