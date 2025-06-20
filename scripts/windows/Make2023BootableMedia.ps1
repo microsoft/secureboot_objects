@@ -73,7 +73,7 @@ function Show-Usage {
 }
 
 function Show-ADK-Req {
-    Write-Host "This script requires the Windows ADK be installed on the system. Avalable at http://aka.ms/adk" -ForegroundColor Red
+    Write-Host "This script requires the Windows ADK be installed on the system. Available at http://aka.ms/adk" -ForegroundColor Red
     Write-Host "After install, open an admin-elevated 'Deploy and Imaging Tools Environment' command prompt provided with the ADK." -ForegroundColor Red
     Write-Host "Then run PowerShell from this command prompt and you should be good to go.`r`n" -ForegroundColor Red
 }
@@ -227,7 +227,7 @@ function Initialize-MediaPaths {
         $localMediaPath = ($mountResult | Get-Volume).DriveLetter + ":"
 
         # Retrieve the volume label from the mounted ISO to be used later if a new ISO is created
-        $global:ISO_Lable = (Get-Volume -DriveLetter ($mountResult | Get-Volume).DriveLetter).FileSystemLabel
+        $global:ISO_Label = (Get-Volume -DriveLetter ($mountResult | Get-Volume).DriveLetter).FileSystemLabel
 
     } else {
 
@@ -714,15 +714,15 @@ function Create-ISOMedia {
 
      Write-Host "Writing 'Windows UEFI CA 2023' bootable ISO media at location [$ISOPath]" -ForegroundColor Blue
 
-     # If $ISOLable is not set, then defualt to "WINDOWS2023PCAISO"
-    if (-not $global:ISO_Lable) {
-        $global:ISO_Lable = "WINDOWS2023PCAISO"
+     # If $ISOLabel is not set, then default to "WINDOWS2023PCAISO"
+    if (-not $global:ISO_Label) {
+        $global:ISO_Label = "WINDOWS2023PCAISO"
     }
 
     # Generate a timestamp string in the following format: mm/dd/yyyy,hh:mm:ss
     $timestamp = Get-Date -Format "MM/dd/yyyy,HH:mm:ss"
 
-    $runCommand = "-l$global:ISO_Lable -t$timestamp -bootdata:2#p0,e,b$global:Temp_Media_To_Update_Path\boot\etfsboot.com#pEF,e,b$global:Temp_Media_To_Update_Path\efi\microsoft\boot\efisys_ex.bin -u2 -udfver102 -o $global:Temp_Media_To_Update_Path `"$($ISOPath)`""
+    $runCommand = "-l$global:ISO_Label -t$timestamp -bootdata:2#p0,e,b$global:Temp_Media_To_Update_Path\boot\etfsboot.com#pEF,e,b$global:Temp_Media_To_Update_Path\efi\microsoft\boot\efisys_ex.bin -u2 -udfver102 -o $global:Temp_Media_To_Update_Path `"$($ISOPath)`""
 
     Write-Dbg-Host "Running: $global:oscdimg_exe $runCommand"
     try {
