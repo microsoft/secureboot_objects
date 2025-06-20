@@ -454,9 +454,9 @@ def build_default_keys(
 
     # Collect DBX certificate subject names for CA revocation filtering if enabled
     dbx_certificate_subjects = set()
-    if exclude_revoked_ca_hashes and 'DBX' in keystore:
+    if exclude_revoked_ca_hashes and 'DefaultDbx' in keystore:
         dbx_cert_paths = []
-        for file_dict in keystore['DBX']['files']:
+        for file_dict in keystore['DefaultDbx']['files']:
             file_path = Path(file_dict["path"])
             if file_path.suffix.lower() in ['.crt', '.der']:
                 dbx_cert_paths.append(str(file_path))
@@ -511,7 +511,7 @@ def build_default_keys(
                 logging.info("Converting %s to signature list.", file_path)
 
                 # Pass filtering parameters for JSON files processing DBX variable
-                if file_ext == ".json" and variable == "DBX":
+                if file_ext == ".json" and variable == "DefaultDbx":
                     # Get override CAs from the file configuration if present
                     allow_hashes_by_ca = set(file_dict.get("allow_hashes_by_ca", []))
 
