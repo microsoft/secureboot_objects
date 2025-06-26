@@ -65,13 +65,3 @@ jobs:
           Write-Host "❌ Validation tests failed with exit code: $exitCode" -ForegroundColor Red
           exit $exitCode
         }
-        
-    - name: Report test results
-      if: always()
-      shell: pwsh
-      run: |
-        if ($LASTEXITCODE -eq 0) {
-          Write-Host "::notice title=Validation Complete::All PowerShell validation tests passed successfully"
-        } else {
-          Write-Host "::error title=Validation Failed::PowerShell validation tests failed. Please review the script changes."
-        }
