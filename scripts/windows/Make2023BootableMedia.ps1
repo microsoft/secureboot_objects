@@ -227,7 +227,7 @@ function Initialize-MediaPaths {
         $localMediaPath = ($mountResult | Get-Volume).DriveLetter + ":"
 
         # Retrieve the volume label from the mounted ISO to be used later if a new ISO is created
-        $global:ISO_Label = (Get-Volume -DriveLetter ($mountResult | Get-Volume).DriveLetter).FileSystemLabel
+        $global:ISO_Lable = (Get-Volume -DriveLetter ($mountResult | Get-Volume).DriveLetter).FileSystemLabel
 
     } else {
 
@@ -444,11 +444,17 @@ function Validate-Parameters {
             }
 
             if ($FileSystem -and
-                ($FileSystem -ne "FAT32" -and $FileSystem -ne "ExFAT")) {
-                Write-Host "`r`n-FileSystem must be FAT32 or ExFAT to boot on most UEFI systems." -ForegroundColor Red
-                Write-Host "`r`nNOTE: FAT32 does not support files larger than 4GB and may cause media creation failures on newer OS media.`r`n" -ForegroundColor Red
-                return $false
+               ($FileSystem -ne "FAT32" -and $FileSystem -ne "ExFAT" -and $FileSystem -ne "NTFS")) {
+               Write-Host "`r`n-FileSystem must be FAT32, ExFAT, or NTFS to proceed." -ForegroundColor Red
+               return $false
             }
+
+            if ($FileSystem -eq "NTFS") {
+                Write-Host "`r`n⚠️  WARNING: The NTFS format may not be supported by all UEFI firmware." -ForegroundColor Yellow
+                Write-Host "       However, it is required for files larger than 4 GB (such as install.wim).\r\n" -ForegroundColor Yellow
+
+            }
+
 
             if (-not $USBDrive) {
                 Write-Host "`r`n-USBDrive parameter required for TargetType USB.`r`n" -ForegroundColor Red
@@ -660,9 +666,20 @@ function Copy-2023BootBins {
     Write-Host "Updating staged media to use boot binaries signed with 'Windows UEFI CA 2023' certificate" -ForegroundColor Blue
 
     try {
-        #Copy  $ex_bins_path\bootmgr_EX.efi to $global:Temp_Media_To_Update_Path\bootmgr.efi
-        Write-Dbg-Host "Copying $ex_bins_path\bootmgr_EX.efi to $global:Temp_Media_To_Update_Path\bootmgr.efi"
-        Copy-Item -Path $ex_bins_path"\bootmgr_EX.efi" -Destination $global:Temp_Media_To_Update_Path"\bootmgr.efi" -Force -ErrorAction stop | Out-Null
+        # Try to find and copy a valid boot manager
+$bootmgrEx = Join-Path $ex_bins_path "bootmgr_EX.efi"
+$bootmgfwEx = Join-Path $ex_bins_path "bootmgfw_EX.efi"
+
+if (Test-Path $bootmgrEx) {
+    Write-Dbg-Host "Copying $bootmgrEx to $global:Temp_Media_To_Update_Path\bootmgr.efi"
+    Copy-Item -Path $bootmgrEx -Destination "$global:Temp_Media_To_Update_Path\bootmgr.efi" -Force -ErrorAction stop | Out-Null
+} elseif (Test-Path $bootmgfwEx) {
+    Write-Dbg-Host "Copying $bootmgfwEx to $global:Temp_Media_To_Update_Path\bootmgr.efi"
+    Copy-Item -Path $bootmgfwEx -Destination "$global:Temp_Media_To_Update_Path\bootmgr.efi" -Force -ErrorAction stop | Out-Null
+} else {
+    Write-Warning "No *_EX.efi boot manager found in $ex_bins_path — skipping bootmgr.efi replacement."
+}
+
 
         # Copy $ex_bins_path\bootmgrfw_EX.efi to $global:Temp_Media_To_Update_Path\efi\boot\bootx64.efi
         Write-Dbg-Host "Copying $ex_bins_path\bootmgfw_EX.efi to $global:Temp_Media_To_Update_Path\efi\boot\bootx64.efi"
@@ -714,15 +731,15 @@ function Create-ISOMedia {
 
      Write-Host "Writing 'Windows UEFI CA 2023' bootable ISO media at location [$ISOPath]" -ForegroundColor Blue
 
-     # If $ISOLabel is not set, then default to "WINDOWS2023PCAISO"
-    if (-not $global:ISO_Label) {
-        $global:ISO_Label = "WINDOWS2023PCAISO"
+     # If $ISOLable is not set, then defualt to "WINDOWS2023PCAISO"
+    if (-not $global:ISO_Lable) {
+        $global:ISO_Lable = "WINDOWS2023PCAISO"
     }
 
     # Generate a timestamp string in the following format: mm/dd/yyyy,hh:mm:ss
     $timestamp = Get-Date -Format "MM/dd/yyyy,HH:mm:ss"
 
-    $runCommand = "-l$global:ISO_Label -t$timestamp -bootdata:2#p0,e,b$global:Temp_Media_To_Update_Path\boot\etfsboot.com#pEF,e,b$global:Temp_Media_To_Update_Path\efi\microsoft\boot\efisys_ex.bin -u2 -udfver102 -o $global:Temp_Media_To_Update_Path `"$($ISOPath)`""
+    $runCommand = "-l$global:ISO_Lable -t$timestamp -bootdata:2#p0,e,b$global:Temp_Media_To_Update_Path\boot\etfsboot.com#pEF,e,b$global:Temp_Media_To_Update_Path\efi\microsoft\boot\efisys_ex.bin -u2 -udfver102 -o $global:Temp_Media_To_Update_Path $ISOPath"
 
     Write-Dbg-Host "Running: $global:oscdimg_exe $runCommand"
     try {
@@ -766,7 +783,7 @@ function Create-USBMedia {
 
     $fileSystem = $FileSystem
     if (-not $FileSystem) {
-        $fileSystem = "FAT32"
+        $fileSystem = "NTFS"
     }
 
     # Format the drive using the existing label
