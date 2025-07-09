@@ -1,3 +1,8 @@
+# @file
+#
+# Copyright (c) Microsoft Corporation
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+##
 """Signs a variable in accordance with EFI_AUTHENTICATION_2.
 
 Relevant RFC's
@@ -6,15 +11,6 @@ Relevant RFC's
        (In particular To-be-signed Certificate))
        [https://www.rfc-editor.org/rfc/rfc5280#section-4.1.2]
     * https://www.itu.int/ITU-T/formal-language/itu-t/x/x420/1999/PKCS7.html
-
-# TODO:
-    * Implement Certificate Verification (https://stackoverflow.com/questions/70654598/python-pkcs7-x509-chain-of-trust-with-cryptography)
-
-pip requirements:
-    pyasn1
-    pyasn1_modules
-    edk2toollib
-    cryptography # Depends on having openssl installed
 """
 
 import argparse
@@ -30,15 +26,12 @@ from edk2toollib.uefi.authenticated_variables_structure_support import (
     EfiVariableAuthentication2Builder,
 )
 
-# from edk2toollib.uefi.uefi_multi_phase import EfiVariableAttributes
-
 # Puts the script into debug mode, may be enabled via argparse
 ENABLE_DEBUG = False
 
 # Index into the certificate argument
 CERTIFICATE_FILE_PATH = 0
 CERTIFICATE_PASSWORD = 1
-
 
 logging.basicConfig()
 logger = logging.getLogger()
@@ -89,6 +82,19 @@ def sign_variable(args: argparse.Namespace) -> int:
             logger.info(f"Signed variable saved to: {output_file}")
 
 def describe_variable(args: argparse.Namespace) -> int:
+    """Parses and describes an authenticated variable structure.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        The parsed command-line arguments containing the signed payload file path
+        and output directory.
+
+    Returns:
+    -------
+    int
+        Status code (0 for success).
+    """
     auth_var = None
     with open(args.signed_payload, 'rb') as f:
         auth_var = EfiVariableAuthentication2(decodefs=f)
@@ -141,7 +147,7 @@ def setup_sign_parser(subparsers: argparse._SubParsersAction) -> argparse._SubPa
 
     sign_parser.add_argument(
         "attributes",
-        help="Variable Attributes, AT is a required attribute (Ex. \"NV,BT,RT,AT\")"
+        help="Variable Attributes, AT is a required attribute (Ex. \"NV,BS,RT,AT\")"
     )
 
     sign_parser.add_argument(
@@ -162,8 +168,13 @@ def setup_sign_parser(subparsers: argparse._SubParsersAction) -> argparse._SubPa
     return subparsers
 
 
-def setup_describe_parser(subparsers):
+def setup_describe_parser(subparsers: argparse._SubParsersAction) -> argparse._SubParsersAction:
+    """Sets up the describe parser.
 
+    :param subparsers: - sub parser from argparse to add options to
+
+    :returns: subparser
+    """
     describe_parser = subparsers.add_parser(
         "describe", help="Parses Authenticated Variable 2 structures"
     )
@@ -181,10 +192,8 @@ def setup_describe_parser(subparsers):
 
     return subparsers
 
-
-def parse_args():
-    """Parses arguments from the command line
-    """
+def parse_args() -> argparse.Namespace:
+    """Parses arguments from the command line."""
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers()
 
@@ -211,12 +220,17 @@ def parse_args():
     return args
 
 
-def main():
+def main() -> None:
+    """Entry point for the auth_var_tool script.
+
+    Parses command-line arguments and executes the appropriate subcommand
+    (sign or describe) based on user input.
+    """
     args = parse_args()
 
     status_code = args.function(args)
 
-    return sys.exit(status_code)
+    sys.exit(status_code)
 
 
 main()
