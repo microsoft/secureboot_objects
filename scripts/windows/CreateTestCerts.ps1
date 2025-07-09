@@ -1,6 +1,17 @@
 #Requires -RunAsAdministrator
 
+<#
+.DESCRIPTION
 # This script generates test certificates for use with Secure Boot testing.
+
+.PARAMETER Action
+Specifies the action to perform. Valid values are "create" or "delete".
+
+.NOTES
+Author: Microsoft
+Date: 7/8/25
+Version: 1.0
+#>
 
 param (
     [string]$Action
@@ -15,15 +26,8 @@ For production, always use an HSM or other secure key storage solution.
 ================================================================================
 "@
 
-# =============================================================================
-# Script Variables - Do not change
-# =============================================================================
-# Change these variables to your own values if required
-
 # This is the text that will be appended to the end of the certificate's OU field
 $AdditionalText = "TESTING ONLY - DO NOT USE FOR PRODUCTION"
-
-
 
 if (-not $Env:TestSecureBootDefaults) {
     $Env:TestSecureBootDefaults = (Get-Location).Path + "\SecureBootDefaults"
@@ -78,7 +82,7 @@ $CommonParams = @{
     Type = "Custom"
     KeyUsage = "DigitalSignature"
     KeyAlgorithm = "RSA"
-    KeyLength = 2048 # 2048 is the minimum key length for Secure Boot 
+    KeyLength = 2048 # 2048 is the minimum key length for Secure Boot
     KeyExportPolicy = "Exportable"
     CertStoreLocation = $CertStore
     NotAfter = (Get-Date).AddYears(1)
@@ -189,7 +193,7 @@ if (-not (Test-Action -Action $Action -ValidActions @("create", "delete"))) {
 }
 
 if ($Action.equals("create")) {
-    
+
     # Create the output directories for the signing certificates
     New-OutputDirIfNotExists $SigningCerts
     # Prompt the user to enter a password for the certificates
