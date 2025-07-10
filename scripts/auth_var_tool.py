@@ -50,36 +50,87 @@ def sign_variable(args: argparse.Namespace) -> int:
     int
         Status code (0 for success, non-zero for failure).
     """
+    # Read the variable data
     with open(args.data_file, 'rb') as f:
         data = f.read()
 
-        builder = EfiVariableAuthentication2Builder(
-            name=args.name,
-            guid=args.guid,
-            attributes=args.attributes,
-            payload=data,
-        )
+    # Create the authentication builder
+    builder = EfiVariableAuthentication2Builder(
+        name=args.name,
+        guid=args.guid,
+        attributes=args.attributes,
+        payload=data,
+    )
 
-        # Load the signing certificate from the PFX file
-        with open(args.pfx_file, 'rb') as f:
-            password = getpass("Enter the password for the PFX file: ").encode('utf-8')
-            pkcs12_store = pkcs12.load_pkcs12(
-                f.read(),
-                password
-            )
+    # Handle case where no PFX file is provided (output signable data)
+    if not args.pfx_file:
+        return _create_signable_data(builder, args)
 
-            builder.sign(pkcs12_store.cert.certificate, pkcs12_store.key)
+    # Handle case where PFX file is provided (sign the variable)
+    return _sign_with_pfx(builder, args)
 
-            auth_var = builder.finalize()
 
-            name = args.name
-            logger.info(f"Signing variable: {name} with GUID: {args.guid}")
-            output_file = os.path.join(args.output_dir, f"{name}.authvar.bin")
+def _create_signable_data(builder: EfiVariableAuthentication2Builder, args: argparse.Namespace) -> int:
+    """Creates signable data when no PFX file is provided.
 
-            with open(output_file, "wb") as f:
-               f.write(auth_var.encode())
+    Parameters
+    ----------
+    builder : EfiVariableAuthentication2Builder
 
-            logger.info(f"Signed variable saved to: {output_file}")
+    args : argparse.Namespace
+        The parsed command-line arguments containing the output directory and variable name.
+
+    Returns:
+    -------
+    int
+        Status code (0 for success).
+    """
+    logger.info("No PFX file provided, outputting signable data.")
+
+    output_file = os.path.join(args.output_dir, f"{args.name}.signable.bin")
+
+    with open(output_file, "wb") as f:
+        f.write(builder.get_digest())
+
+    logger.info(f"Signable data for {args.name} with GUID: {args.guid}")
+    logger.info(f"Signable data saved to: {output_file}")
+    return 0
+
+
+def _sign_with_pfx(builder: EfiVariableAuthentication2Builder, args: argparse.Namespace) -> int:
+    """Signs the variable using the provided PFX file.
+
+    Parameters
+    ----------
+    builder : EfiVariableAuthentication2Builder
+
+    args : argparse.Namespace
+        The parsed command-line arguments containing the PFX file path and output directory.
+
+    Returns:
+    -------
+    int
+        Status code (0 for success).
+    """
+    # Load the signing certificate from the PFX file
+    with open(args.pfx_file, 'rb') as f:
+        pfx_data = f.read()
+
+    password = getpass("Enter the password for the PFX file: ").encode('utf-8')
+    pkcs12_store = pkcs12.load_pkcs12(pfx_data, password)
+
+    # Sign the variable
+    builder.sign(pkcs12_store.cert.certificate, pkcs12_store.key)
+    auth_var = builder.finalize()
+
+    # Save the signed variable
+    output_file = os.path.join(args.output_dir, f"{args.name}.authvar.bin")
+    with open(output_file, "wb") as f:
+        f.write(auth_var.encode())
+
+    logger.info(f"Signed variable: {args.name} with GUID: {args.guid}")
+    logger.info(f"Signed variable saved to: {output_file}")
+    return 0
 
 def describe_variable(args: argparse.Namespace) -> int:
     """Parses and describes an authenticated variable structure.
@@ -156,8 +207,9 @@ def setup_sign_parser(subparsers: argparse._SubParsersAction) -> argparse._SubPa
     )
 
     sign_parser.add_argument(
-        "pfx_file", type=typecheck_file_exists,
-        help="Pkcs12 certificate to sign the authenticated data with (Cert.pfx)"
+        "--pfx-file", default=None,
+        help="Pkcs12 certificate to sign the authenticated data with (Cert.pfx)." \
+        " If not provided, outputs the signable data instead."
     )
 
     sign_parser.add_argument(
