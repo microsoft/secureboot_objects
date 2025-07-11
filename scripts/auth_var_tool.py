@@ -54,10 +54,6 @@ from edk2toollib.uefi.authenticated_variables_structure_support import (
 # Puts the script into debug mode, may be enabled via argparse
 ENABLE_DEBUG = False
 
-# Index into the certificate argument
-CERTIFICATE_FILE_PATH = 0
-CERTIFICATE_PASSWORD = 1
-
 logging.basicConfig()
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
