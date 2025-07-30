@@ -1,0 +1,84 @@
+# @file
+# Template Name: Baseline Configuration (No CA Revocation)
+# Description:
+#  Same configuration as WindowsProductionCARevocationOnly but without 
+#  adding the CA to DBX, to establish baseline measurements.
+#
+# Usage:
+#   python3 scripts/secure_boot_default_keys.py --keystore Templates/BaselineNoRevocation.toml -o output/
+#
+# Copyright (C) Microsoft Corporation
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+#
+##
+################################
+# Default PK File Entry #
+################################
+
+[DefaultPk]
+help = "Contains the Microsoft PK to enable signature database updates and binary execution."
+
+[[DefaultPk.files]]
+path = "PreSignedObjects/PK/Certificate/WindowsOEMDevicesPK.der"
+sha1 = 0x3D8660C0CB2D57B189C3D7995572A552F75E48B5
+signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
+description = "Platform Key (owner) who may authorize changes to the KEK Variable"
+
+###################################
+# KEK File Entries #
+###################################
+[DefaultKek]
+help = "Contains the 2023 and 2011 Microsoft KEK CAs."
+
+[[DefaultKek.files]]
+path = "PreSignedObjects/KEK/Certificates/microsoft corporation kek 2k ca 2023.der"
+url = "https://go.microsoft.com/fwlink/?linkid=2239775"
+sha1 = 0x459ab6fb5e284d272d5e3e6abc8ed663829d632b
+signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
+description = "2023 Microsoft KEK CA"
+
+[[DefaultKek.files]]
+path = "PreSignedObjects/KEK/Certificates/MicCorKEKCA2011_2011-06-24.der"
+url = "https://go.microsoft.com/fwlink/p/?linkid=321185"
+sha1 = 0x31590bfd89c9d74ed087dfac66334b3931254b30
+signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
+description = "2011 Microsoft KEK CA"
+
+##################################
+# DB File Entries #
+##################################
+[DefaultDb]
+help = "Contains 2011 Windows Production CA, 2011 Microsoft UEFI CA, and 2023 Windows Production CA."
+
+[[DefaultDb.files]]
+path = "PreSignedObjects/DB/Certificates/MicWinProPCA2011_2011-10-19.der"
+url = "https://go.microsoft.com/fwlink/p/?linkid=321192"
+sha1 = 0x580a6f4cc4e4b669b9ebdc1b2b3e087b80d0678d
+signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
+description = "2011 Windows Production CA"
+
+[[DefaultDb.files]]
+path = "PreSignedObjects/DB/Certificates/MicCorUEFCA2011_2011-06-27.der"
+url = "https://go.microsoft.com/fwlink/p/?linkid=321194"
+sha1 = 0x46def63b5ce61cf8ba0de2e6639c1019d0ed14f3
+signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
+description = "2011 Microsoft UEFI CA"
+
+[[DefaultDb.files]]
+path = "PreSignedObjects/DB/Certificates/windows uefi ca 2023.der"
+url = "https://go.microsoft.com/fwlink/?linkid=2239776"
+sha1 = 0x45a0fa32604773c82433c3b7d59e7466b3ac0c67
+signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
+description = "2023 Windows Production CA"
+
+############################
+# DBX File Entries #
+############################
+[DefaultDbx]
+help = "Contains DBX without any CA revocation for baseline measurement."
+
+[[DefaultDbx.files]]
+path = "PreSignedObjects/DBX/dbx_info_msft_06_10_25.json"
+sha1 = 0x123456789abcdef
+signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
+description = "Microsoft DBX JSON file containing revoked signatures - baseline"
