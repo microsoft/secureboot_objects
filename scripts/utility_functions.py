@@ -8,9 +8,12 @@
 including SVN data, signature databases, and secure boot payloads.
 """
 
+import argparse
 import hashlib
+import json
 import pathlib
 import struct
+import sys
 from dataclasses import dataclass
 from uuid import UUID
 
@@ -286,3 +289,35 @@ def get_unsigned_payload_receipt(efi_sig_database: pathlib.Path) -> dict:
         receipt["signatureDatabase"] = readable_signature_database
 
     return receipt
+
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(description="Utility for parsing and describing secure boot signature databases")
+    parser.add_argument("file", type=pathlib.Path, help="Path to the signature database file")
+    parser.add_argument("--signed", action="store_true", help="Indicates the file is a signed EFI variable")
+    parser.add_argument("--output", "-o", type=pathlib.Path, help="Output file for the receipt (JSON format)")
+
+    args = parser.parse_args()
+
+    if not args.file.exists():
+        print(f"Error: File '{args.file}' not found.", file=sys.stderr)
+        sys.exit(1)
+
+    try:
+        if args.signed:
+            receipt = get_signed_payload_receipt(args.file)
+        else:
+            receipt = get_unsigned_payload_receipt(args.file)
+
+        json_output = json.dumps(receipt, indent=2)
+
+        if args.output:
+            with open(args.output, "w") as f:
+                f.write(json_output)
+            print(f"Receipt written to '{args.output}'")
+        else:
+            print(json_output)
+
+    except Exception as e:
+        print(f"Error processing file: {e}", file=sys.stderr)
+        sys.exit(1)
