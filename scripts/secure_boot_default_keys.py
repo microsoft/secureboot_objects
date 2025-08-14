@@ -253,7 +253,8 @@ def _convert_json_to_signature_list(
         authorized_subjects (set, optional): Set of authorized certificate subject names. Defaults to None.
         exclude_revoked_ca_hashes (bool, optional): Whether to exclude hashes signed by revoked CAs. Defaults to False.
         revoked_ca_subjects (set, optional): Set of revoked CA certificate subject names. Defaults to None.
-        allow_hashes_by_ca (set, optional): Set of CA names whose hashes should be kept even if revoked. Defaults to None.
+        allow_hashes_by_ca (set, optional): Set of CA names whose hashes should be kept even if revoked.
+            Defaults to None.
         **kwargs (any): Additional keyword arguments.
 
     Returns:

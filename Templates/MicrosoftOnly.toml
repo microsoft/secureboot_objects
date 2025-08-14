@@ -62,3 +62,29 @@ path = "PreSignedObjects/DBX/dbx.empty"
 sha1 = 0xF8D326CCD9233747A29E2F67AFEB77C25787BD39
 signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
 description =  "Special file to create an empty signature database."
+
+# Optional: SVN (Security Version Number) revocations for 2023-only configurations
+# Uncomment the entries below to include SVN-based revocations if building a comprehensive DBX
+#[[DefaultDbx.files]]
+#path = "PostSignedObjects/Optional/DBX/amd64/DBXUpdateSVN.bin"
+#sha1 = 0xbe763aaa3bb043730883c570caf9c25d8ffd6d82
+#signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
+#description = "SVN-based revocations for vulnerable Windows boot managers (amd64)"
+#
+#[[DefaultDbx.files]]
+#path = "PostSignedObjects/Optional/DBX/arm64/DBXUpdateSVN.bin"
+#sha1 = 0xbe763aaa3bb043730883c570caf9c25d8ffd6d82
+#signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
+#description = "SVN-based revocations for vulnerable Windows boot managers (arm64)"
+#
+#[[DefaultDbx.files]]
+#path = "PostSignedObjects/Optional/DBX/arm/DBXUpdateSVN.bin"
+#sha1 = 0xbe763aaa3bb043730883c570caf9c25d8ffd6d82
+#signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
+#description = "SVN-based revocations for vulnerable Windows boot managers (arm)"
+#
+#[[DefaultDbx.files]]
+#path = "PostSignedObjects/Optional/DBX/x86/DBXUpdateSVN.bin"
+#sha1 = 0xbe763aaa3bb043730883c570caf9c25d8ffd6d82
+#signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
+#description = "SVN-based revocations for vulnerable Windows boot managers (x86)"
