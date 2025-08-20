@@ -85,7 +85,7 @@ try {
     }
 
     Log-Message "Enrolling DBX..." "Green"
-    $esult = Set-SecureBootUEFI -Time $time -ContentFilePath $DbxFilePath -Name dbx
+    $Result = Set-SecureBootUEFI -Time $time -ContentFilePath $DbxFilePath -Name dbx
     if ($null -ne $Result) {
         Log-Message "DBX enrolled successfully." "Green"
     } else {
