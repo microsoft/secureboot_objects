@@ -29,5 +29,5 @@ jobs:
   draft:
     name: Draft Releases
 
-    uses: microsoft/mu_devops/.github/workflows/ReleaseDrafter.yml@v15.0.3
+    uses: microsoft/mu_devops/.github/workflows/ReleaseDrafter.yml@v16.0.0
     secrets: inherit
