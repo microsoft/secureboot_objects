@@ -571,6 +571,9 @@ def parse_args() -> argparse.Namespace:
     subparsers = setup_describe_parser(subparsers)
 
     args = parser.parse_args()
+    # Create output directory if it doesn't exist (after parsing args)
+    if hasattr(args, 'output_dir') and args.output_dir:
+        os.makedirs(args.output_dir, exist_ok=True)
 
     if not hasattr(args, "function"):
         parser.print_help(sys.stderr)
