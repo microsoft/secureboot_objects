@@ -9,7 +9,15 @@ This script:
 1. Takes as arguments two signed PEs (EFI applications)
 2. Compares the binaries and confirms that they are valid (other than the signature they should be binary compatible)
 3. Extracts the signature from the first binary
-4. Appends that signature to the second binary
+4.        modified_signer['unauthenticatedAttributes'] = unauth_attrs
+        logger.info("Added nested signature to unauthenticated attributes (OID 1.3.6.1.4.1.311.2.4.1)")
+
+        # Set the modified signer as the only SignerInfo
+        combined_signer_infos = rfc2315.SignerInfos()
+        combined_signer_infos[0] = modified_signer
+        combined_signed_data['signerInfos'] = combined_signer_infos
+
+        logger.info("Created SignerInfo with nested signature structure")that signature to the second binary
 5. Confirms that the transplant was successful
 """
 
@@ -438,7 +446,7 @@ def combine_pkcs7_signatures(pkcs7_data1: bytes, pkcs7_data2: bytes, output_path
         unauth_attrs[0] = nested_sig_attr
 
         modified_signer['unauthenticatedAttributes'] = unauth_attrs
-        logger.info("✅ Added nested signature to unauthenticated attributes (OID 1.3.6.1.4.1.311.2.4.1)")
+        logger.info("Added nested signature to unauthenticated attributes (OID 1.3.6.1.4.1.311.2.4.1)")
 
         # Set the modified signer as the only SignerInfo
         combined_signer_infos = rfc2315.SignerInfos()
@@ -458,14 +466,14 @@ def combine_pkcs7_signatures(pkcs7_data1: bytes, pkcs7_data2: bytes, output_path
         # Encode the final ContentInfo
         combined_pkcs7 = encoder.encode(combined_content_info)
 
-        logger.info(f"✅ Combined PKCS#7 size: {len(combined_pkcs7)} bytes")
+        logger.info(f"Combined PKCS#7 size: {len(combined_pkcs7)} bytes")
         logger.info("   (signtool reference size: 2904 bytes)")
 
         # Save to file for inspection
         with open(output_path, 'wb') as f:
             f.write(combined_pkcs7)
 
-        logger.info(f"✅ Saved combined PKCS#7 to: {output_path}")
+        logger.info(f"Saved combined PKCS#7 to: {output_path}")
 
         return combined_pkcs7
 
@@ -477,8 +485,7 @@ def combine_pkcs7_signatures(pkcs7_data1: bytes, pkcs7_data2: bytes, output_path
 
 
 def create_win_certificate(pkcs7_data: bytes) -> bytes:
-    """
-    Wrap PKCS#7 data in a WIN_CERTIFICATE structure.
+    """Wrap PKCS#7 data in a WIN_CERTIFICATE structure.
 
     WIN_CERTIFICATE structure:
         DWORD dwLength;          // Length including header
@@ -497,12 +504,12 @@ def create_win_certificate(pkcs7_data: bytes) -> bytes:
     # Calculate total length (must be 8-byte aligned)
     header_size = 8  # 4 + 2 + 2
     total_length = header_size + len(pkcs7_data)
-    
+
     # Align to 8 bytes
     padding = (8 - (total_length % 8)) % 8
     total_length += padding
 
-    logger.info(f"Creating WIN_CERTIFICATE structure:")
+    logger.info("Creating WIN_CERTIFICATE structure:")
     logger.info(f"  PKCS#7 size: {len(pkcs7_data)} bytes")
     logger.info(f"  Header size: {header_size} bytes")
     logger.info(f"  Padding: {padding} bytes")
@@ -512,22 +519,21 @@ def create_win_certificate(pkcs7_data: bytes) -> bytes:
     win_cert = struct.pack('<I', total_length)  # dwLength (little-endian DWORD)
     win_cert += struct.pack('<H', 0x0200)       # wRevision (little-endian WORD)
     win_cert += struct.pack('<H', 0x0002)       # wCertificateType (PKCS_SIGNED_DATA)
-    
+
     # Append PKCS#7 data
     win_cert += pkcs7_data
-    
+
     # Add padding to align to 8 bytes
     if padding > 0:
         win_cert += b'\x00' * padding
 
-    logger.info(f"✅ Created WIN_CERTIFICATE: {len(win_cert)} bytes")
-    
+    logger.info(f"Created WIN_CERTIFICATE: {len(win_cert)} bytes")
+
     return win_cert
 
 
 def apply_signature_to_pe(pe_path: str, signature_data: bytes, output_path: str) -> None:
-    """
-    Apply a signature (WIN_CERTIFICATE) to a PE file.
+    """Apply a signature (WIN_CERTIFICATE) to a PE file.
 
     This function:
     1. Loads the PE file
@@ -541,10 +547,9 @@ def apply_signature_to_pe(pe_path: str, signature_data: bytes, output_path: str)
         output_path: Path to output PE file
     """
     import struct
-    import shutil
 
     logger.info(f"Applying signature to PE file: {pe_path}")
-    
+
     # Read the entire PE file
     with open(pe_path, 'rb') as f:
         pe_data = bytearray(f.read())
@@ -558,7 +563,7 @@ def apply_signature_to_pe(pe_path: str, signature_data: bytes, output_path: str)
 
     # Check if it's PE32 or PE32+
     magic = struct.unpack('<H', pe_data[opt_header_offset:opt_header_offset+2])[0]
-    
+
     if magic == 0x10b:  # PE32
         security_dir_offset = opt_header_offset + 128
         logger.info("PE32 format detected")
@@ -578,7 +583,7 @@ def apply_signature_to_pe(pe_path: str, signature_data: bytes, output_path: str)
     if orig_va != 0:
         pe_data = pe_data[:orig_va]
         logger.info(f"Removed existing signature at 0x{orig_va:x}")
-    
+
     # Calculate new signature location
     new_va = len(pe_data)
     new_size = len(signature_data)
@@ -596,7 +601,7 @@ def apply_signature_to_pe(pe_path: str, signature_data: bytes, output_path: str)
     with open(output_path, 'wb') as f:
         f.write(pe_data)
 
-    logger.info(f"✅ Applied signature to: {output_path}")
+    logger.info(f"Applied signature to: {output_path}")
     logger.info(f"   File size: {len(pe_data)} bytes")
 
 
@@ -655,7 +660,7 @@ def main() -> int:
             logger.error("Use --force to override this check")
             return 1
 
-        logger.info("✅ PE files have compatible content")
+        logger.info("PE files have compatible content")
 
         logger.info("Extracting signatures...")
 
@@ -689,7 +694,7 @@ def main() -> int:
 
         try:
             combined_pkcs7 = combine_pkcs7_signatures(pkcs7_data1, pkcs7_data2, combined_pkcs7_file)
-            logger.info("🎉 Successfully combined signatures!")
+            logger.info("Successfully combined signatures!")
             logger.info(f"   Combined PKCS#7 saved to: {combined_pkcs7_file}")
             logger.info(f"   Combined size: {len(combined_pkcs7)} bytes")
 
@@ -705,7 +710,7 @@ def main() -> int:
             apply_signature_to_pe(args.source1, win_cert_data, args.output)
 
             logger.info("")
-            logger.info("✅✅✅ SUCCESS! Dual-signed PE file created! ✅✅✅")
+            logger.info("SUCCESS! Dual-signed PE file created!")
             logger.info(f"   Output: {args.output}")
             logger.info("")
             logger.info("Next step: Verify with signtool:")
