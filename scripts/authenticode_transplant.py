@@ -416,12 +416,32 @@ def combine_pkcs7_signatures(pkcs7_data1: bytes, pkcs7_data2: bytes, output_path
         modified_signer['digestEncryptionAlgorithm'] = primary_signer['digestEncryptionAlgorithm']
         modified_signer['encryptedDigest'] = primary_signer['encryptedDigest']
 
-        # Create unauthenticated attributes with nested signature
+        # Preserve existing unauthenticated attributes (e.g., timestamp countersignature)
+        # and add the nested signature
         # OID 1.3.6.1.4.1.311.2.4.1 = Microsoft Nested Signature
+        # OID 1.2.840.113549.1.9.6 = countersignature (timestamp)
+        
+        # Start with existing unauthenticated attributes if present
+        unauth_attrs = rfc2315.Attributes().subtype(
+            implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatConstructed, 1)
+        )
+        
+        attr_index = 0
+        
+        # Copy existing unauthenticated attributes (preserves timestamps)
+        if 'unauthenticatedAttributes' in primary_signer and primary_signer['unauthenticatedAttributes'].isValue:
+            existing_attrs = primary_signer['unauthenticatedAttributes']
+            for i, attr in enumerate(existing_attrs):
+                unauth_attrs[attr_index] = attr
+                attr_index += 1
+                # Log if we found a timestamp
+                if str(attr['type']) == '1.2.840.113549.1.9.6':
+                    logger.info("Preserved timestamp countersignature from primary signature")
+        
+        # Create nested signature attribute
         nested_sig_oid = univ.ObjectIdentifier('1.3.6.1.4.1.311.2.4.1')
 
         # The nested signature is the entire second PKCS#7 ContentInfo as a SEQUENCE
-        # We encode the second PKCS#7 as a SEQUENCE (which is what ContentInfo is)
         nested_content_info2, _ = decoder.decode(pkcs7_data2, asn1Spec=rfc2315.ContentInfo())
 
         # Now encode it back to get the DER bytes wrapped as a SEQUENCE
@@ -434,16 +454,13 @@ def combine_pkcs7_signatures(pkcs7_data1: bytes, pkcs7_data2: bytes, output_path
         nested_signature_values = univ.SetOf(componentType=univ.Any())
         nested_signature_values[0] = nested_value
 
-        # Create the Attribute structure
+        # Create the Attribute structure for nested signature
         nested_sig_attr = rfc2315.Attribute()
         nested_sig_attr['type'] = nested_sig_oid
         nested_sig_attr['values'] = nested_signature_values
 
-        # Create unauthenticated attributes SET with proper context tag [1]
-        unauth_attrs = rfc2315.Attributes().subtype(
-            implicitTag=tag.Tag(tag.tagClassContext, tag.tagFormatConstructed, 1)
-        )
-        unauth_attrs[0] = nested_sig_attr
+        # Add nested signature to unauthenticated attributes
+        unauth_attrs[attr_index] = nested_sig_attr
 
         modified_signer['unauthenticatedAttributes'] = unauth_attrs
         logger.info("Added nested signature to unauthenticated attributes (OID 1.3.6.1.4.1.311.2.4.1)")
