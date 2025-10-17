@@ -31,17 +31,15 @@ class TestAuthenticodeTransplant(unittest.TestCase):
         try:
             result = subprocess.run(
                 [sys.executable, "scripts/authenticode_transplant.py", "--help"],
-                cwd="/home/runner/work/secureboot_objects/secureboot_objects",
+                cwd=os.getcwd(),
                 capture_output=True,
                 text=True,
                 timeout=10
             )
             self.assertEqual(result.returncode, 0)
-            self.assertIn("Transplant Authenticode signature", result.stdout)
-            self.assertIn("source_pe", result.stdout)
-            self.assertIn("target_pe", result.stdout)
-            self.assertIn("output_pe", result.stdout)
-            self.assertIn("--force", result.stdout)
+            self.assertIn("Authenticode signature tool for PE/UEFI binaries", result.stdout)
+            self.assertIn("combine", result.stdout)
+            self.assertIn("verify", result.stdout)
             self.assertIn("--debug", result.stdout)
         except subprocess.TimeoutExpired:
             self.fail("Help command timed out")
@@ -51,7 +49,7 @@ class TestAuthenticodeTransplant(unittest.TestCase):
         try:
             result = subprocess.run(
                 [sys.executable, "scripts/authenticode_transplant.py"],
-                cwd="/home/runner/work/secureboot_objects/secureboot_objects",
+                cwd=os.getcwd(),
                 capture_output=True,
                 text=True,
                 timeout=10
@@ -72,14 +70,15 @@ class TestAuthenticodeTransplant(unittest.TestCase):
         try:
             result = subprocess.run(
                 [sys.executable, "scripts/authenticode_transplant.py",
-                 "/nonexistent/source.exe", target_file, output_file],
-                cwd="/home/runner/work/secureboot_objects/secureboot_objects",
+                 "combine", "/nonexistent/source.exe", target_file, "--output", output_file],
+                cwd=os.getcwd(),
                 capture_output=True,
                 text=True,
                 timeout=10
             )
             self.assertNotEqual(result.returncode, 0)
-            self.assertIn("Source PE file not found", result.stderr)
+            # The error message may be about file not found or PE validation
+            self.assertTrue("not found" in result.stderr or "FileNotFoundError" in result.stderr)
         except subprocess.TimeoutExpired:
             self.fail("Command with nonexistent source timed out")
 
@@ -95,14 +94,15 @@ class TestAuthenticodeTransplant(unittest.TestCase):
         try:
             result = subprocess.run(
                 [sys.executable, "scripts/authenticode_transplant.py",
-                 source_file, "/nonexistent/target.exe", output_file],
-                cwd="/home/runner/work/secureboot_objects/secureboot_objects",
+                 "combine", source_file, "/nonexistent/target.exe", "--output", output_file],
+                cwd=os.getcwd(),
                 capture_output=True,
                 text=True,
                 timeout=10
             )
             self.assertNotEqual(result.returncode, 0)
-            self.assertIn("Target PE file not found", result.stderr)
+            # The error message may be about file not found or PE validation
+            self.assertTrue("not found" in result.stderr or "FileNotFoundError" in result.stderr)
         except subprocess.TimeoutExpired:
             self.fail("Command with nonexistent target timed out")
 
@@ -121,8 +121,8 @@ class TestAuthenticodeTransplant(unittest.TestCase):
         try:
             result = subprocess.run(
                 [sys.executable, "scripts/authenticode_transplant.py",
-                 "--debug", source_file, target_file, output_file],
-                cwd="/home/runner/work/secureboot_objects/secureboot_objects",
+                 "--debug", "combine", source_file, target_file, "--output", output_file],
+                cwd=os.getcwd(),
                 capture_output=True,
                 text=True,
                 timeout=10
@@ -131,6 +131,55 @@ class TestAuthenticodeTransplant(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
         except subprocess.TimeoutExpired:
             self.fail("Command with debug flag timed out")
+
+    def test_combine_help_message(self) -> None:
+        """Test that the combine subcommand help message works."""
+        try:
+            result = subprocess.run(
+                [sys.executable, "scripts/authenticode_transplant.py", "combine", "--help"],
+                cwd=os.getcwd(),
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            self.assertEqual(result.returncode, 0)
+            self.assertIn("sources", result.stdout)
+            self.assertIn("--output", result.stdout)
+            self.assertIn("--nested", result.stdout)
+        except subprocess.TimeoutExpired:
+            self.fail("Combine help command timed out")
+
+    def test_verify_help_message(self) -> None:
+        """Test that the verify subcommand help message works."""
+        try:
+            result = subprocess.run(
+                [sys.executable, "scripts/authenticode_transplant.py", "verify", "--help"],
+                cwd=os.getcwd(),
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            self.assertEqual(result.returncode, 0)
+            self.assertIn("source", result.stdout)
+            self.assertIn("--output-dir", result.stdout)
+        except subprocess.TimeoutExpired:
+            self.fail("Verify help command timed out")
+
+    def test_verify_nonexistent_file(self) -> None:
+        """Test verify subcommand with non-existent file."""
+        try:
+            result = subprocess.run(
+                [sys.executable, "scripts/authenticode_transplant.py",
+                 "verify", "/nonexistent/file.exe"],
+                cwd=os.getcwd(),
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertTrue("not found" in result.stderr or "FileNotFoundError" in result.stderr)
+        except subprocess.TimeoutExpired:
+            self.fail("Verify command with nonexistent file timed out")
 
 
 if __name__ == "__main__":
