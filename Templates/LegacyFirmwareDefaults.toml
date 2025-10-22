@@ -162,6 +162,6 @@ signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
 help = "Contains a list of revoked certificates that will not execute on this system. Filtered per Architecture (ARM, Intel)."
 
 [[DefaultDbx.files]]
-path = "PreSignedObjects/DBX/dbx_info_msft_10_14_25.json"
-sha1 = 0x1DD8DECFC1EC56524C8EFC045B96A93C1FB3D411
+path = "PreSignedObjects/DBX/dbx_info_msft_latest.json"
+sha1 = 0x8818A4486178E0B253FBBB6F0A9E64DC144E2480
 signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"

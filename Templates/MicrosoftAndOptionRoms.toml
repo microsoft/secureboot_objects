@@ -61,11 +61,6 @@ description = "2023+ signed UEFI Third-Party Option ROMs (e.g. Graphics/Storage/
 help = "Contains a list of revoked certificates that will not execute on this system. Filtered per Architecture (ARM, Intel)."
 
 [[DBX.files]]
-#
-# New recommendation is to allow the OS to manage the dbx and not ship a DefaultDbx with the firmware.
-# A valid configuration is to ship an unset DBX variable.
-#
-path = "PreSignedObjects/DBX/dbx.empty"
-sha1 = 0xF8D326CCD9233747A29E2F67AFEB77C25787BD39
+path = "PreSignedObjects/DBX/dbx_info_msft_latest.json"
+sha1 = 0x8818A4486178E0B253FBBB6F0A9E64DC144E2480
 signature_owner = "77fa9abd-0359-4d32-bd60-28f4e78f784b"
-description =  "Special file to create an empty signature database."
