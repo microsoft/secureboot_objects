@@ -34,9 +34,32 @@ def get_latest_dbx_info_file(dbx_directory: pathlib.Path) -> pathlib.Path:
     if not dbx_files:
         raise FileNotFoundError("No DBX info JSON files found in the specified directory.")
 
-    # Parse the date components from the filename (month_day_year format)
+    # Check if we have the standard latest file
+    latest_file = dbx_directory / "dbx_info_msft_latest.json"
+    if latest_file.exists():
+        return latest_file
+
+    # Fall back to parsing date components from filenames (month_day_year format)
+    # Filter out any files that don't follow the date pattern
+    dated_files = []
+    for f in dbx_files:
+        try:
+            # Try to parse the last 3 parts as integers (month, day, year)
+            parts = f.stem.split("_")
+            if len(parts) >= 6:  # dbx_info_msft_month_day_year
+                list(map(int, parts[-3:]))  # This will raise ValueError if not all integers
+                dated_files.append(f)
+        except (ValueError, IndexError):
+            # Skip files that don't follow the date pattern
+            continue
+
+    if not dated_files:
+        # If no dated files, just return the first available file
+        return dbx_files[0]
+
+    # Return the file with the latest date
     try:
-        latest_file = max(dbx_files, key=lambda f: list(map(int, f.stem.split("_")[-3:])))
+        latest_file = max(dated_files, key=lambda f: list(map(int, f.stem.split("_")[-3:])))
         return latest_file
     except (ValueError, IndexError) as e:
         raise FileNotFoundError(f"Could not parse date from DBX info filenames: {e}")
