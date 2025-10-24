@@ -101,6 +101,11 @@ def calculate_authenticode_hash(pe: pefile.PE) -> str:
     Note:
         This hash is used for Authenticode signature verification and follows the
         Microsoft Authenticode specification for computing PE file hashes.
+
+        Specificiation can be found here:
+        https://aka.ms/AuthenticodeSpec
+
+        This algorithm conforms to v1.1 of the specification.
     """
     security_directory = pe.OPTIONAL_HEADER.DATA_DIRECTORY[
         pefile.DIRECTORY_ENTRY["IMAGE_DIRECTORY_ENTRY_SECURITY"]
@@ -119,6 +124,11 @@ def calculate_authenticode_hash(pe: pefile.PE) -> str:
         raw_data[certificate_table_offset + 0x08 : certificate_virtual_addr]
         + raw_data[certificate_virtual_addr + certificate_size :]
     )  # Skip IMAGE_DIRECTORY_ENTRY_SECURITY and certificate
+
+    # Ensure hash_data is aligned to 8-byte boundary per Authenticode specification
+    padding_needed = (8 - (len(hash_data) % 8)) % 8
+    if padding_needed > 0:
+        hash_data += b'\x00' * padding_needed
 
     return hashlib.sha256(hash_data).hexdigest()
 
