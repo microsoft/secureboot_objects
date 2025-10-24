@@ -120,6 +120,11 @@ def calculate_authenticode_hash(pe: pefile.PE) -> str:
         + raw_data[certificate_virtual_addr + certificate_size :]
     )  # Skip IMAGE_DIRECTORY_ENTRY_SECURITY and certificate
 
+    # Ensure hash_data is aligned to 8-byte boundary per Authenticode specification
+    padding_needed = (8 - (len(hash_data) % 8)) % 8
+    if padding_needed > 0:
+        hash_data += b'\x00' * padding_needed
+
     return hashlib.sha256(hash_data).hexdigest()
 
 
