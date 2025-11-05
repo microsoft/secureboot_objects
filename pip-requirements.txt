@@ -1,6 +1,6 @@
 edk2-pytool-library==0.23.10
 edk2-pytool-extensions==0.30.5
-ruff==0.14.2
+ruff==0.14.3
 pytest==8.4.2
 pefile==2024.8.26
 pyasn1==0.6.1
