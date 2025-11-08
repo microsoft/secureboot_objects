@@ -159,6 +159,14 @@
             "issued_by": "CN=SIMATIC IPC"
         }
     },
+    "131a78741e5d4152489b838ed8f717fb167d6888": {
+        "KEKUpdate": "ASUS\\KEKUpdate_ASUS_PK131A7874.bin",
+        "Certificate": {
+            "serial_number": 302175829239457839529451592946861809633,
+            "issued_to": "CN=ASUSTeK Notebook PK Certificate",
+            "issued_by": "CN=ASUSTeK Notebook PK Certificate"
+        }
+    },
     "f77be268ff7cd9691721db46df7405b93fc4ee89": {
         "KEKUpdate": "Attis\\KEKUpdate_Attis_PK1.bin",
         "Certificate": {
