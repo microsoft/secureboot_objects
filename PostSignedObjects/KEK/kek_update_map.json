@@ -167,6 +167,14 @@
             "issued_by": "CN=ASUSTeK Notebook PK Certificate"
         }
     },
+    "eabcb3d43c0f3353f6396e297a8cbc4ef5f2ad39": {
+        "KEKUpdate": "ASUS\\KEKUpdate_ASUS_PKEABCB3D4.bin",
+        "Certificate": {
+            "serial_number": 260199805933469957056129376191946942494,
+            "issued_to": "CN=HQ NBD1 PlatformKey Certificate",
+            "issued_by": "CN=HQ NBD1 PlatformKey Certificate"
+        }
+    },
     "f77be268ff7cd9691721db46df7405b93fc4ee89": {
         "KEKUpdate": "Attis\\KEKUpdate_Attis_PK1.bin",
         "Certificate": {
