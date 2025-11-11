@@ -183,6 +183,14 @@
             "issued_by": "CN=ASUS Secure Boot Root CA"
         }
     },
+    "b3840dfcf8ab23704e6c5e51ce6f3e38459ef9ac": {
+        "KEKUpdate": "ASUS\\KEKUpdate_ASUS_PKB3840DFC.bin",
+        "Certificate": {
+            "serial_number": 144094376851983441394594762852389863153,
+            "issued_to": "CN=DO NOT TRUST - OEM PK",
+            "issued_by": "CN=DO NOT TRUST - OEM PK"
+        }
+    },
     "f77be268ff7cd9691721db46df7405b93fc4ee89": {
         "KEKUpdate": "Attis\\KEKUpdate_Attis_PK1.bin",
         "Certificate": {
