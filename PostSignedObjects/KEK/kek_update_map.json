@@ -175,6 +175,14 @@
             "issued_by": "CN=HQ NBD1 PlatformKey Certificate"
         }
     },
+    "21303e44ff724e7ba4a998a8bb87fc7bbca62dd0": {
+        "KEKUpdate": "ASUS\\KEKUpdate_ASUS_PK21303E44.bin",
+        "Certificate": {
+            "serial_number": 286881949182936514409181631885185063042,
+            "issued_to": "CN=ASUS Secure Boot PK",
+            "issued_by": "CN=ASUS Secure Boot Root CA"
+        }
+    },
     "f77be268ff7cd9691721db46df7405b93fc4ee89": {
         "KEKUpdate": "Attis\\KEKUpdate_Attis_PK1.bin",
         "Certificate": {
