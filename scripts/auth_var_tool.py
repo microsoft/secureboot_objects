@@ -58,6 +58,40 @@ logging.basicConfig()
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
+
+def _parse_timestamp(timestamp_str: str = None) -> datetime.datetime:
+    """Parse timestamp string into timezone-aware datetime object.
+
+    Parameters
+    ----------
+    timestamp_str : str, optional
+        ISO 8601 format timestamp string. If None, returns current UTC time.
+
+    Returns:
+    -------
+    datetime.datetime
+        Timezone-aware datetime object in UTC.
+
+    Raises:
+    ------
+    ValueError
+        If timestamp_str is not a valid ISO 8601 format.
+    """
+    if timestamp_str:
+        # Parse ISO 8601 format timestamp
+        timestamp_str = timestamp_str if "T" in timestamp_str else timestamp_str + "T00:00:00"
+        provided_time = datetime.datetime.fromisoformat(timestamp_str)
+
+        # Ensure timezone-aware (default to UTC if not specified)
+        if provided_time.tzinfo is None:
+            provided_time = provided_time.replace(tzinfo=datetime.timezone.utc)
+
+        return provided_time.astimezone(datetime.timezone.utc)
+    else:
+        # Use current time
+        return datetime.datetime.now(datetime.timezone.utc)
+
+
 def format_variable(args: argparse.Namespace) -> int:
     """Formats a variable for signing by generating signable data and a receipt file.
 
@@ -91,17 +125,26 @@ def format_variable(args: argparse.Namespace) -> int:
     with open(args.data_file, "rb") as f:
         data = f.read()
 
-    # Create the authentication builder
+    # Parse timestamp using the helper function
+    try:
+        signing_time = _parse_timestamp(args.timestamp)
+        logger.info(f"Using timestamp: {signing_time.isoformat()}")
+    except ValueError:
+        logger.error(f"Invalid timestamp format: {args.timestamp}. Expected ISO 8601 format (YYYY-MM-DDTHH:MM:SS)")
+        return 1
+
+    # Create the authentication builder with the correct timestamp
     builder = EfiVariableAuthentication2Builder(
         name=args.name,
         guid=args.guid,
         attributes=args.attributes,
         payload=data,
+        efi_time=signing_time,
     )
 
     # Generate signable data and receipt
     logger.info(f"Formatting variable '{args.name}' for external signing.")
-    return _create_signable_data(builder, args)
+    return _create_signable_data(builder, args, signing_time)
 
 
 def sign_variable(args: argparse.Namespace) -> int:
@@ -153,29 +196,13 @@ def sign_variable(args: argparse.Namespace) -> int:
             logger.error("These arguments are required unless using --receipt-file with --signature-file")
             return 1
 
-        # Set timestamp if provided
-        timestamp = datetime.datetime.now()
-        if args.timestamp:
-            try:
-                # Parse ISO 8601 format timestamp
-                if "T" in args.timestamp:
-                    provided_time = datetime.datetime.fromisoformat(args.timestamp)
-                else:
-                    # Support date-only format, default to midnight
-                    provided_time = datetime.datetime.fromisoformat(args.timestamp + "T00:00:00")
-
-                # Ensure timezone-aware (default to UTC if not specified)
-                if provided_time.tzinfo is None:
-                    provided_time = provided_time.replace(tzinfo=datetime.timezone.utc)
-
-                timestamp = provided_time.astimezone(datetime.timezone.utc)
-                logger.info(f"Using provided timestamp: {timestamp.isoformat()}")
-
-            except ValueError:
-                logger.error(
-                    f"Invalid timestamp format: {args.timestamp}. Expected ISO 8601 format (YYYY-MM-DDTHH:MM:SS)"
-                )
-                return 1
+        # Parse timestamp using the helper function
+        try:
+            timestamp = _parse_timestamp(args.timestamp)
+            logger.info(f"Using timestamp: {timestamp.isoformat()}")
+        except ValueError:
+            logger.error(f"Invalid timestamp format: {args.timestamp}. Expected ISO 8601 format (YYYY-MM-DDTHH:MM:SS)")
+            return 1
 
         # Validate data file exists
         if not os.path.isfile(args.data_file):
@@ -196,7 +223,11 @@ def sign_variable(args: argparse.Namespace) -> int:
             return _sign_with_pfx(builder, args)
 
 
-def _create_signable_data(builder: EfiVariableAuthentication2Builder, args: argparse.Namespace) -> int:
+def _create_signable_data(
+    builder: EfiVariableAuthentication2Builder,
+    args: argparse.Namespace,
+    signing_time: datetime.datetime = None
+) -> int:
     """Creates signable data when no PFX file is provided.
 
     Parameters
@@ -206,36 +237,21 @@ def _create_signable_data(builder: EfiVariableAuthentication2Builder, args: argp
     args : argparse.Namespace
         The parsed command-line arguments containing the output directory and variable name.
 
+    signing_time : datetime.datetime, optional
+        The timestamp to use for signing. If None, current time is used.
+
     Returns:
     -------
     int
         Status code (0 for success).
     """
-    # Generate timestamp for the signing operation
-    if args.timestamp:
-        try:
-            # Parse ISO 8601 format timestamp
-            timestamp_str = args.timestamp if "T" in args.timestamp else args.timestamp + "T00:00:00"
-            provided_time = datetime.datetime.fromisoformat(timestamp_str)
-
-            # Ensure timezone-aware (default to UTC if not specified)
-            if provided_time.tzinfo is None:
-                provided_time = provided_time.replace(tzinfo=datetime.timezone.utc)
-
-            signing_time = provided_time.astimezone(datetime.timezone.utc)
-            logger.info(f"Using provided timestamp: {signing_time.isoformat()}")
-        except ValueError:
-            logger.error(f"Invalid timestamp format: {args.timestamp}. Expected ISO 8601 format (YYYY-MM-DDTHH:MM:SS)")
-            return 1
-    else:
-        # Use current time
-        signing_time = datetime.datetime.now(datetime.timezone.utc)
-        logger.info(f"Using current timestamp: {signing_time.isoformat()}")
-
     # Create the signable data output file
     output_file = os.path.join(args.output_dir, f"{args.name}.signable.bin")
     with open(output_file, "wb") as f:
         f.write(builder.get_digest())
+
+    # signing_time should always be provided by the caller
+    assert signing_time is not None, "signing_time must be provided to _create_signable_data"
 
     # Create a receipt file with all the metadata needed for signature attachment
     receipt_data = {
