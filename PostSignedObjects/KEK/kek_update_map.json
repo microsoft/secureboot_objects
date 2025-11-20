@@ -495,6 +495,22 @@
             "issued_by": "CN=Fujitsu Firmware Private Intermediate CA 2023,O=Fujitsu Limited,L=Kawasaki,ST=Kanagawa,C=JP"
         }
     },
+    "f5d4bf68688fc71474e97c79c183a4ed877bff89": {
+        "KEKUpdate": "Fujitsu (& FCCL)\\KEKUpdate_Fujitsu_(&_FCCL)_PK17.bin",
+        "Certificate": {
+            "serial_number": 66172418202976761126922147664013122121,
+            "issued_to": "CN=Fujitsu ODM Gigabyte BIOS PK Certificate",
+            "issued_by": "CN=Fujitsu ODM Gigabyte BIOS PK Certificate"
+        }
+    },
+    "4bd956b3b6f124d67154b421485f0057ede51ccb": {
+        "KEKUpdate": "Fujitsu (& FCCL)\\KEKUpdate_Fujitsu_(&_FCCL)_PK18.bin",
+        "Certificate": {
+            "serial_number": 174256670183706344443622609041474666970,
+            "issued_to": "CN=Fujitsu ODM Pegatron BIOS PK Certificate",
+            "issued_by": "CN=Fujitsu ODM Pegatron BIOS PK Certificate"
+        }
+    },
     "882f696954b86cf29108ccd5248eda936406ea2c": {
         "KEKUpdate": "Getac\\KEKUpdate_Getac_PK1.bin",
         "Certificate": {
