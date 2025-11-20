@@ -23,7 +23,7 @@
             "issued_by": "CN=Acer Root CA,O=Acer,L=Taipei,ST=TW,C=Taiwan"
         }
     },
-	"9dbdabc291fb598cb61ac0826b3273b37648b9f4": {
+	  "9dbdabc291fb598cb61ac0826b3273b37648b9f4": {
         "KEKUpdate": "Acer\\KEKUpdate_Acer_PK9DBDABC2.bin",
         "Certificate": {
             "serial_number": 12692207746377278411,
@@ -31,7 +31,7 @@
             "issued_by": "OU=RD,O=BIOSTAR Microtech International Corp,L=TAIPEI,S=TAIWAN,C=TW"
         }
     },
-	"6cd7005bdf38b270649ae6ad19ee46c7b040f8c2": {
+	  "6cd7005bdf38b270649ae6ad19ee46c7b040f8c2": {
         "KEKUpdate": "Acer\\KEKUpdate_Acer_PK6CD7005B.bin",
         "Certificate": {
             "serial_number": 18075579020686801877,
