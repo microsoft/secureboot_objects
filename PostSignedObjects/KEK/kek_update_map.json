@@ -3599,6 +3599,14 @@
             "issued_by": "CN=OEM1 Test Certificate"
         }
     },
+    "31c22f2a60bc83a1e361ee6959b5cdd7f4940a5e": {
+        "KEKUpdate": "TONGFANG\\KEKUpdate_TONGFANG_PK31C22F2A.bin",
+        "Certificate": {
+            "serial_number": 24663bc83929aaac28419a3edca63bed893ff3d5,
+            "issued_to": "CN=AIStoneGlobal Platform Key 2024",
+            "issued_by": "CN=AIStoneGlobal Platform Key 2024"
+        }
+    },
     "60d059444e045a0795b636aeffac566a2f294ebe": {
         "KEKUpdate": "Twinhead\\KEKUpdate_Twinhead_PK1.bin",
         "Certificate": {
