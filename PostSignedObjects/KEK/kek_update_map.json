@@ -3207,7 +3207,36 @@
             "issued_by": "CN=Root Agency"
         }
     },
-    "8058e8cc51749652804bbd6f39aed713d119c64b": {
+	{
+    "288fbed9acd7fdbb7fc87a1cd64c8c893d8d5a14": {
+        "KEKUpdate": "MEDION\\KEKUpdate_PK1.bin",
+        "Certificate": {
+            "serial_number": 179793435848490317188102839746769023911,
+            "issued_to": "CN=MEDION Certificate",
+            "issued_by": "CN=MEDION Certificate"
+        }
+    }
+	},
+		{
+    "5fb475a6dbbd6eeb7145dee46c55feea1f1ad444": {
+        "KEKUpdate": "MEDION\\KEKUpdate_PK2.bin",
+        "Certificate": {
+            "serial_number": 157348579362544316338617078756374669701,
+            "issued_to": "CN=MEDION Certificate",
+            "issued_by": "CN=MEDION Certificate"
+        }
+    }
+	},
+		{
+    "961021660f68e24430288803ed9c848354bb177e": {
+        "KEKUpdate": "MEDION\\KEKUpdate_PK3.bin",
+        "Certificate": {
+            "serial_number": 70577371397206560837050816373159487978,
+            "issued_to": "CN=MEDION_AG",
+            "issued_by": "CN=MEDION_AG"
+        }
+    }
+	},    "8058e8cc51749652804bbd6f39aed713d119c64b": {
         "KEKUpdate": "Microsoft\\KEKUpdate_Microsoft_PK1.bin",
         "Certificate": {
             "serial_number": 171049019130091589582073331848314912,
