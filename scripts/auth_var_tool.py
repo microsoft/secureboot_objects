@@ -647,6 +647,71 @@ def _attach_signature_from_receipt(args: argparse.Namespace) -> int:
     return 0
 
 
+def _convert_hex_strings_to_readable(content: str) -> str:
+    """Convert hex-encoded strings in describe output to human-readable format.
+
+    This function searches for patterns like "value=0x131a..." in the content
+    and attempts to decode them as UTF-8 strings. Common encodings in certificates
+    include PrintableString (0x13), UTF8String (0x0c), and IA5String (0x16).
+
+    Parameters
+    ----------
+    content : str
+        The original text content from auth_var.print()
+
+    Returns:
+    -------
+    str
+        The content with hex strings converted to readable format where possible
+    """
+    import re
+
+    # Pattern to match hex value lines like "         value=0x131a444f204e4f54..."
+    pattern = r'([ ]*value=)(0x[0-9a-fA-F]+)'
+
+    def decode_hex_value(match):
+        indent = match.group(1)
+        hex_string = match.group(2)
+
+        try:
+            # Remove "0x" prefix and convert to bytes
+            hex_bytes = bytes.fromhex(hex_string[2:])
+
+            # Check if this looks like an ASN.1 encoded string
+            # Common prefixes: 0x13 (PrintableString), 0x0c (UTF8String), 0x16 (IA5String)
+            if len(hex_bytes) >= 2 and hex_bytes[0] in [0x13, 0x0c, 0x16]:
+                # Second byte is the length
+                length = hex_bytes[1]
+                if len(hex_bytes) >= 2 + length:
+                    # Extract the string content
+                    string_data = hex_bytes[2:2+length]
+                    try:
+                        # Attempt to decode as UTF-8
+                        decoded = string_data.decode('utf-8')
+                        # Only replace if it looks like printable text
+                        if decoded.isprintable() or all(c in '\t\n\r' or c.isprintable() for c in decoded):
+                            return f'{indent}{hex_string} ("{decoded}")'
+                    except (UnicodeDecodeError, AttributeError):
+                        pass
+
+            # If it's not ASN.1 encoded, try direct UTF-8 decode
+            # (in case it's just raw string data)
+            try:
+                decoded = hex_bytes.decode('utf-8')
+                if decoded.isprintable() or all(c in '\t\n\r' or c.isprintable() for c in decoded):
+                    return f'{indent}{hex_string} ("{decoded}")'
+            except UnicodeDecodeError:
+                pass
+
+        except (ValueError, IndexError):
+            pass
+
+        # If decoding fails, return original
+        return match.group(0)
+
+    return re.sub(pattern, decode_hex_value, content)
+
+
 def describe_variable(args: argparse.Namespace) -> int:
     """Parses and describes an authenticated variable structure.
 
@@ -668,8 +733,17 @@ def describe_variable(args: argparse.Namespace) -> int:
     name = os.path.basename(args.signed_payload)
     output_file = os.path.join(args.output_dir, f"{name}.authvar.txt")
 
+    # First write to a buffer to capture the output
+    buffer = io.StringIO()
+    auth_var.print(outfs=buffer)
+
+    # Get the content and convert hex strings to readable format
+    content = buffer.getvalue()
+    readable_content = _convert_hex_strings_to_readable(content)
+
+    # Write the converted content to the output file
     with open(output_file, "w") as f:
-        auth_var.print(outfs=f)
+        f.write(readable_content)
 
     payload_hash = hashlib.sha256(auth_var.payload).hexdigest()
     logger.info(f"Payload SHA256: {payload_hash}")
