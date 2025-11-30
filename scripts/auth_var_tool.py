@@ -5,11 +5,12 @@
 ##
 """UEFI Authenticated Variable Tool for signing and formatting variables.
 
-This tool provides three main commands:
+This tool provides four main commands:
 
 1. format: Generates signable data and receipt files for external signing workflows
 2. sign: Signs variables using PFX files or attaches pre-generated signatures
-3. describe: Parses and describes existing signed variables
+3. verify: Verifies cryptographic signatures of authenticated variables
+4. describe: Parses and describes existing signed variables
 
 The tool supports both direct signing (using PFX files) and external signing
 workflows (where signatures are generated outside this tool and then attached).
@@ -31,12 +32,16 @@ Examples:
     # Attach external signature using receipt
     python auth_var_tool.py sign --receipt-file MyVar.receipt.json --signature-file MyVar.bin.p7
 
+    # Verify a signed authenticated variable
+    python auth_var_tool.py verify MyVar.authvar.bin MyVar 8be4df61-93ca-11d2-aa0d-00e098032b8c "NV,BS,RT,AT,AP" -v
+
     # Describe an existing signed variable
     python auth_var_tool.py describe signed_variable.bin
 """
 
 import argparse
 import datetime
+import hashlib
 import io
 import json
 import logging
@@ -45,11 +50,18 @@ import sys
 import uuid
 from getpass import getpass
 
+from cryptography import x509
+from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa
 from cryptography.hazmat.primitives.serialization import pkcs12
 from edk2toollib.uefi.authenticated_variables_structure_support import (
     EfiVariableAuthentication2,
     EfiVariableAuthentication2Builder,
 )
+from pyasn1.codec.der import decoder, encoder
+from pyasn1_modules import rfc2315
 
 # Puts the script into debug mode, may be enabled via argparse
 ENABLE_DEBUG = False
@@ -90,6 +102,252 @@ def _parse_timestamp(timestamp_str: str = None) -> datetime.datetime:
     else:
         # Use current time
         return datetime.datetime.now(datetime.timezone.utc)
+
+
+def _get_hash_algorithm_from_oid(oid: str) -> hashes.HashAlgorithm | None:
+    """Map OID to cryptography hash algorithm."""
+    oid_map = {
+        '2.16.840.1.101.3.4.2.1': hashes.SHA256(),
+        '2.16.840.1.101.3.4.2.2': hashes.SHA384(),
+        '2.16.840.1.101.3.4.2.3': hashes.SHA512(),
+        '1.3.14.3.2.26': hashes.SHA1(),
+    }
+    return oid_map.get(oid)
+
+
+def _extract_certificates_from_pkcs7(pkcs7_data: bytes) -> list:
+    """Extract X.509 certificates from PKCS7 data."""
+    certificates = []
+    try:
+        # Try to decode as ContentInfo first
+        try:
+            content_info, _ = decoder.decode(pkcs7_data, asn1Spec=rfc2315.ContentInfo())
+            signed_data, _ = decoder.decode(
+                bytes(content_info['content']),
+                asn1Spec=rfc2315.SignedData()
+            )
+        except Exception:
+            # If that fails, try decoding directly as SignedData
+            signed_data, _ = decoder.decode(pkcs7_data, asn1Spec=rfc2315.SignedData())
+
+        # Extract certificates if present
+        if signed_data['certificates'].hasValue():
+            for cert_choice in signed_data['certificates']:
+                cert_der = encoder.encode(cert_choice['certificate'])
+                cert = x509.load_der_x509_certificate(cert_der, default_backend())
+                certificates.append(cert)
+
+    except Exception as e:
+        logger.debug(f"Failed to extract certificates: {e}")
+
+    return certificates
+
+
+def _verify_pkcs7_signature(pkcs7_data: bytes, certificates: list, external_data: bytes) -> dict:
+    """Verify PKCS7 detached signature against external data.
+
+    Returns:
+        dict: Verification results with 'verified' boolean and list of 'signers'
+    """
+    results = {
+        'verified': False,
+        'signers': [],
+        'errors': []
+    }
+
+    try:
+        # Decode PKCS7 structure
+        try:
+            content_info, _ = decoder.decode(pkcs7_data, asn1Spec=rfc2315.ContentInfo())
+            signed_data, _ = decoder.decode(
+                bytes(content_info['content']),
+                asn1Spec=rfc2315.SignedData()
+            )
+        except Exception:
+            signed_data, _ = decoder.decode(pkcs7_data, asn1Spec=rfc2315.SignedData())
+
+        # Verify each signer
+        for signer_idx, signer_info in enumerate(signed_data['signerInfos']):
+            signer_result = {
+                'index': signer_idx,
+                'verified': False,
+                'error': None
+            }
+
+            try:
+                # Get digest algorithm
+                digest_alg_oid = str(signer_info['digestAlgorithm']['algorithm'])
+                hash_algorithm = _get_hash_algorithm_from_oid(digest_alg_oid)
+
+                if not hash_algorithm:
+                    signer_result['error'] = f"Unsupported digest algorithm: {digest_alg_oid}"
+                    results['errors'].append(signer_result['error'])
+                    results['signers'].append(signer_result)
+                    continue
+
+                # Get the encrypted digest (signature)
+                encrypted_digest = bytes(signer_info['encryptedDigest'])
+
+                # Find the signer's certificate
+                serial_number = int(signer_info['issuerAndSerialNumber']['serialNumber'])
+                signer_cert = None
+                for cert in certificates:
+                    if cert.serial_number == serial_number:
+                        signer_cert = cert
+                        break
+
+                if not signer_cert:
+                    signer_result['error'] = f"Signer certificate not found (serial: {serial_number})"
+                    results['errors'].append(signer_result['error'])
+                    results['signers'].append(signer_result)
+                    continue
+
+                # Determine what data to verify
+                if signer_info['authenticatedAttributes'].hasValue():
+                    # With authenticated attributes, sign the attributes
+                    authenticated_attrs = signer_info['authenticatedAttributes']
+                    attrs_der = encoder.encode(authenticated_attrs)
+                    # Replace IMPLICIT tag [0] (0xA0) with SET OF tag (0x31)
+                    if attrs_der[0:1] == b'\xa0':
+                        attrs_der = b'\x31' + attrs_der[1:]
+                    data_to_verify = attrs_der
+                else:
+                    # No authenticated attributes - verify external data directly
+                    data_to_verify = external_data
+
+                # Verify signature
+                public_key = signer_cert.public_key()
+
+                if isinstance(public_key, rsa.RSAPublicKey):
+                    public_key.verify(
+                        encrypted_digest,
+                        data_to_verify,
+                        padding.PKCS1v15(),
+                        hash_algorithm
+                    )
+                    signer_result['verified'] = True
+                elif isinstance(public_key, ec.EllipticCurvePublicKey):
+                    public_key.verify(
+                        encrypted_digest,
+                        data_to_verify,
+                        ec.ECDSA(hash_algorithm)
+                    )
+                    signer_result['verified'] = True
+                else:
+                    signer_result['error'] = f"Unsupported key type: {type(public_key)}"
+                    results['errors'].append(signer_result['error'])
+
+            except InvalidSignature:
+                signer_result['error'] = "Signature verification failed - invalid signature"
+                results['errors'].append(signer_result['error'])
+            except Exception as e:
+                signer_result['error'] = f"Verification error: {str(e)}"
+                results['errors'].append(signer_result['error'])
+
+            results['signers'].append(signer_result)
+
+        # Overall verification passes if all signers verified
+        results['verified'] = all(s['verified'] for s in results['signers']) and len(results['signers']) > 0
+
+    except Exception as e:
+        results['errors'].append(f"PKCS7 parsing error: {str(e)}")
+
+    return results
+
+
+def verify_variable(args: argparse.Namespace) -> int:
+    """Verifies the cryptographic signature of an authenticated variable.
+
+    This command validates that:
+    1. The PKCS7 signature structure is valid
+    2. The signature cryptographically verifies against the signable data
+    3. The signing certificate is present in the signature
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Command-line arguments including:
+        - authvar_file: Path to the signed authenticated variable file
+        - var_name: Variable name used during signing
+        - var_guid: Variable GUID used during signing
+        - attributes: Variable attributes used during signing
+        - verbose: Enable detailed output
+
+    Returns:
+    -------
+    int
+        0 if verification succeeds, 1 if verification fails
+    """
+    try:
+        # Parse the authenticated variable
+        logger.info(f"Verifying authenticated variable: {args.authvar_file}")
+
+        with open(args.authvar_file, 'rb') as f:
+            auth_var = EfiVariableAuthentication2(decodefs=f)
+
+        # Reconstruct the signable data using the builder
+        signing_time = auth_var.time.get_datetime()
+        builder = EfiVariableAuthentication2Builder(
+            name=args.var_name,
+            guid=uuid.UUID(args.var_guid),
+            attributes=args.attributes,
+            payload=auth_var.payload,
+            efi_time=signing_time
+        )
+        signable_data = builder.get_digest()
+
+        if args.verbose:
+            logger.info(f"Variable Name: {args.var_name}")
+            logger.info(f"Variable GUID: {args.var_guid}")
+            logger.info(f"Attributes: {args.attributes}")
+            logger.info(f"Signing Time: {signing_time}")
+            logger.info(f"Payload Size: {len(auth_var.payload)} bytes")
+            logger.info(f"Signable Data SHA256: {hashlib.sha256(signable_data).hexdigest()}")
+
+        # Extract PKCS7 signature (cert_data from edk2toollib is the PKCS7 data)
+        pkcs7_data = auth_var.auth_info.cert_data
+
+        # Extract certificates
+        certificates = _extract_certificates_from_pkcs7(pkcs7_data)
+
+        if args.verbose:
+            logger.info(f"\nCertificates found: {len(certificates)}")
+            for i, cert in enumerate(certificates, 1):
+                logger.info(f"  Certificate {i}:")
+                logger.info(f"    Subject: {cert.subject.rfc4514_string()}")
+                logger.info(f"    Issuer: {cert.issuer.rfc4514_string()}")
+                logger.info(f"    Valid: {cert.not_valid_before_utc} to {cert.not_valid_after_utc}")
+
+        # Verify the signature
+        verification_result = _verify_pkcs7_signature(pkcs7_data, certificates, signable_data)
+
+        # Display results
+        if args.verbose:
+            logger.info("\nSignature Verification Results:")
+            for signer in verification_result['signers']:
+                logger.info(f"  Signer {signer['index'] + 1}:")
+                if signer['verified']:
+                    logger.info("    Status: VERIFIED")
+                else:
+                    logger.info("    Status: FAILED")
+                    if signer['error']:
+                        logger.info(f"    Error: {signer['error']}")
+
+        if verification_result['verified']:
+            logger.info("\n[+] Authenticated variable signature is VALID")
+            return 0
+        else:
+            logger.error("\n[X] Authenticated variable signature verification FAILED")
+            for error in verification_result['errors']:
+                logger.error(f"  - {error}")
+            return 1
+
+    except Exception as e:
+        logger.error(f"Failed to verify authenticated variable: {e}")
+        if args.verbose:
+            import traceback
+            traceback.print_exc()
+        return 1
 
 
 def format_variable(args: argparse.Namespace) -> int:
@@ -413,6 +671,8 @@ def describe_variable(args: argparse.Namespace) -> int:
     with open(output_file, "w") as f:
         auth_var.print(outfs=f)
 
+    payload_hash = hashlib.sha256(auth_var.payload).hexdigest()
+    logger.info(f"Payload SHA256: {payload_hash}")
     logger.info(f"Output: {output_file}")
 
     return 0
@@ -567,6 +827,49 @@ def setup_describe_parser(subparsers: argparse._SubParsersAction) -> argparse._S
     return subparsers
 
 
+def setup_verify_parser(subparsers: argparse._SubParsersAction) -> argparse._SubParsersAction:
+    """Sets up the verify parser.
+
+    :param subparsers: - sub parser from argparse to add options to
+
+    :returns: subparser
+    """
+    verify_parser = subparsers.add_parser(
+        "verify",
+        help="Verifies the cryptographic signature of an authenticated variable"
+    )
+    verify_parser.set_defaults(function=verify_variable)
+
+    verify_parser.add_argument(
+        "authvar_file",
+        type=typecheck_file_exists,
+        help="Path to the signed authenticated variable file (.authvar.bin)"
+    )
+
+    verify_parser.add_argument(
+        "var_name",
+        help="Variable name that was used during signing (e.g., 'KEK', 'db', 'PK')"
+    )
+
+    verify_parser.add_argument(
+        "var_guid",
+        help="Variable GUID that was used during signing (e.g., '8be4df61-93ca-11d2-aa0d-00e098032b8c')"
+    )
+
+    verify_parser.add_argument(
+        "attributes",
+        help="Comma-separated list of attributes used during signing (e.g., 'NV,BS,RT,AT,AP')"
+    )
+
+    verify_parser.add_argument(
+        "-v", "--verbose",
+        action="store_true",
+        help="Enable verbose output with detailed verification information"
+    )
+
+    return subparsers
+
+
 def parse_args() -> argparse.Namespace:
     """Parses arguments from the command line."""
     parser = argparse.ArgumentParser(
@@ -585,6 +888,7 @@ def parse_args() -> argparse.Namespace:
     subparsers = setup_format_parser(subparsers)
     subparsers = setup_sign_parser(subparsers)
     subparsers = setup_describe_parser(subparsers)
+    subparsers = setup_verify_parser(subparsers)
 
     args = parser.parse_args()
     # Create output directory if it doesn't exist (after parsing args)
