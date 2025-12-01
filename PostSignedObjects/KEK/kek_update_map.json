@@ -3741,7 +3741,7 @@
         }
     },
     "815c44daf9858f0f7971cd2d557791e509c55eb4": {
-        "KEKUpdate": "weibu\\KEKUpdate_WEIBU_PK1.bin",
+        "KEKUpdate": "WEIBU\\KEKUpdate_Acer_PK815C44DA.bin",
         "Certificate": {
             "serial_number": 3235b5b3332970ba404d95508f20c5c8,
             "issued_to": "CN=WEIBU Information Inc.",
