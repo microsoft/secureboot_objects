@@ -46,6 +46,7 @@ import io
 import json
 import logging
 import os
+import re
 import sys
 import uuid
 from getpass import getpass
@@ -669,7 +670,7 @@ def _convert_hex_strings_to_readable(content: str) -> str:
     # Pattern to match hex value lines like "         value=0x131a444f204e4f54..."
     pattern = r'([ ]*value=)(0x[0-9a-fA-F]+)'
 
-    def decode_hex_value(match):
+    def decode_hex_value(match: 're.Match[str]') -> str:
         indent = match.group(1)
         hex_string = match.group(2)
 

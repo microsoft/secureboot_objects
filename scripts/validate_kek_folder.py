@@ -27,7 +27,12 @@ KEK_ATTRIBUTES = "NV,BS,RT,AT,AP"
 EXPECTED_PAYLOAD_HASH = "5b85333c009d7ea55cbb6f11a5c2ff45ee1091a968504c929aed25c84674962f"
 
 
-def validate_kek_folder(folder_path: Path, output_file: Path = None, quiet: bool = False, recursive: bool = False):
+def validate_kek_folder(
+    folder_path: Path,
+    output_file: Path = None,
+    quiet: bool = False,
+    recursive: bool = False
+) -> dict:
     """Validate all .bin files in the specified folder.
 
     Args:
@@ -184,7 +189,9 @@ def validate_kek_folder(folder_path: Path, output_file: Path = None, quiet: bool
         logging.info("")
         logging.info("By Manufacturer:")
         for mfr, data in sorted(results["by_manufacturer"].items()):
-            logging.info(f"  {mfr:30s} Total: {len(data['files']):3d}  Valid: {data['valid']:3d}  Invalid: {data['invalid']:3d}")
+            logging.info(
+                f"  {mfr:30s} Total: {len(data['files']):3d}  Valid: {data['valid']:3d}  Invalid: {data['invalid']:3d}"
+            )
     logging.info(f"{'='*60}")
 
     # Save to file if requested
@@ -196,7 +203,8 @@ def validate_kek_folder(folder_path: Path, output_file: Path = None, quiet: bool
     return results
 
 
-def main():
+def main() -> int:
+    """Main entry point for validating KEK update files in a folder."""
     parser = argparse.ArgumentParser(
         description="Validate all KEK update files in a folder"
     )
