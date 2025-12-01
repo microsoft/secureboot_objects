@@ -324,7 +324,8 @@ def verify_variable(args: argparse.Namespace) -> int:
 
         # Display results
         if args.verbose:
-            logger.info("\nSignature Verification Results:")
+            logger.info("")
+            logger.info("Signature Verification Results:")
             for signer in verification_result['signers']:
                 logger.info(f"  Signer {signer['index'] + 1}:")
                 if signer['verified']:
@@ -335,10 +336,10 @@ def verify_variable(args: argparse.Namespace) -> int:
                         logger.info(f"    Error: {signer['error']}")
 
         if verification_result['verified']:
-            logger.info("\n[+] Authenticated variable signature is VALID")
+            logger.info("[+] Authenticated variable signature is VALID")
             return 0
         else:
-            logger.error("\n[X] Authenticated variable signature verification FAILED")
+            logger.error("[-] Authenticated variable signature verification FAILED")
             for error in verification_result['errors']:
                 logger.error(f"  - {error}")
             return 1

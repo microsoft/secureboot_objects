@@ -64,6 +64,13 @@ def validate_kek_folder(
 
     if not bin_files:
         logging.warning(f"No .bin files found in {folder_path}")
+        # Initialize empty summary for consistency
+        results["summary"] = {
+            "total": 0,
+            "valid": 0,
+            "invalid": 0,
+            "manufacturers": 0
+        }
         return results
 
     logging.info(f"Found {len(bin_files)} files to validate\n")
