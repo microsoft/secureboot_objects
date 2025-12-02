@@ -107,7 +107,7 @@ def validate_single_kek(
         # Display results
         sig_status = "VALID" if file_result["valid"] else "INVALID"
         payload_status = "True" if file_result["payload_hash_valid"] else "False"
-        
+
         logging.info(f"  Cryptographic Signature: {sig_status}")
         logging.info(f"  Expected Payload: {payload_status}\n")
 
@@ -244,7 +244,7 @@ def validate_kek_folder(
             # Display results
             sig_status = "VALID" if file_result["valid"] else "INVALID"
             payload_status = "True" if file_result["payload_hash_valid"] else "False"
-            
+
             logging.info(f"  Cryptographic Signature: {sig_status}")
             logging.info(f"  Expected Payload: {payload_status}\n")
 
