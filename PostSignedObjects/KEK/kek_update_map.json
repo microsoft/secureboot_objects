@@ -3739,5 +3739,13 @@
             "issued_to": "CN=ZEBRA Technologies",
             "issued_by": "CN=ZEBRA Technologies"
         }
+    },
+    "fdfc7f3c7ef3e05776add79878216c9be0e19597": {
+        "KEKUpdate": "RedHat\\KEKUpdate_RedHat_PK1.bin",
+        "Certificate": {
+            "serial_number": 18371740789028339953,
+            "issued_to": "CN=Red Hat Secure Boot (PK/KEK key 1), emailAddress=secalert@redhat.com",
+            "issued_by": "CN=Red Hat Secure Boot (PK/KEK key 1), emailAddress=secalert@redhat.com"
+        }
     }
 }
