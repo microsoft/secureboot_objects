@@ -1,7 +1,7 @@
-"""Validate all KEK update files in a folder and generate a JSON report.
+"""Validate KEK update file(s) and generate a JSON report.
 
-This script validates all authenticated variable files in the specified folder
-and generates a JSON report with validation results.
+This script validates authenticated variable files - either a single file or all
+files in a specified folder - and generates a JSON report with validation results.
 """
 
 import argparse
@@ -25,6 +25,97 @@ KEK_ATTRIBUTES = "NV,BS,RT,AT,AP"
 
 # Expected payload hash for Microsoft 2023 KEK (EFI Signature List with x.509)
 EXPECTED_PAYLOAD_HASH = "5b85333c009d7ea55cbb6f11a5c2ff45ee1091a968504c929aed25c84674962f"
+
+
+def validate_single_kek(
+    kek_file: Path,
+    quiet: bool = False
+) -> dict:
+    """Validate a single KEK update file.
+
+    Args:
+        kek_file: Path to KEK update file
+        quiet: If True, suppress validation output from the prototype
+
+    Returns:
+        dict: Validation result for the file
+    """
+    logging.info(f"Validating: {kek_file.name}")
+
+    file_result = {
+        "filename": kek_file.name,
+        "path": str(kek_file),
+        "valid": False,
+        "payload_hash_valid": False,
+        "error": None,
+        "warnings": [],
+        "details": {}
+    }
+
+    try:
+        # First, parse the authenticated variable to check payload hash
+        with open(kek_file, 'rb') as f:
+            auth_var = EfiVariableAuthentication2(decodefs=f)
+            payload = auth_var.payload
+            payload_hash = hashlib.sha256(payload).hexdigest()
+
+            file_result["payload_hash"] = payload_hash
+            file_result["payload_size"] = len(payload)
+            file_result["payload_hash_valid"] = (payload_hash.lower() == EXPECTED_PAYLOAD_HASH.lower())
+
+            if not file_result["payload_hash_valid"]:
+                warning_msg = f"Payload hash mismatch: expected {EXPECTED_PAYLOAD_HASH}, got {payload_hash}"
+                file_result["warnings"].append(warning_msg)
+                logging.warning("  [!] Payload hash mismatch!")
+                logging.warning(f"      Expected: {EXPECTED_PAYLOAD_HASH}")
+                logging.warning(f"      Got:      {payload_hash}")
+
+        # Validate the file using auth_var_tool.verify_variable
+        # Create a namespace object with the required arguments
+        import argparse
+        verify_args = argparse.Namespace(
+            authvar_file=str(kek_file),
+            var_name=KEK_NAME,
+            var_guid=KEK_GUID,
+            attributes=KEK_ATTRIBUTES,
+            verbose=False
+        )
+
+        # Capture logger output if in quiet mode
+        if quiet:
+            # Temporarily increase logger level to suppress INFO messages
+            original_level = logging.root.level
+            logging.root.setLevel(logging.ERROR)
+
+        try:
+            # verify_variable returns 0 for success, 1 for failure
+            exit_code = verify_variable(verify_args)
+            file_result["valid"] = (exit_code == 0)
+
+            if not file_result["valid"]:
+                file_result["warnings"].append("Signature verification failed")
+        finally:
+            if quiet:
+                # Restore original logger level
+                logging.root.setLevel(original_level)
+
+        # Store basic details
+        file_result["details"] = {
+            "verified": file_result["valid"]
+        }
+
+        # Display results
+        sig_status = "VALID" if file_result["valid"] else "INVALID"
+        payload_status = "True" if file_result["payload_hash_valid"] else "False"
+        
+        logging.info(f"  Cryptographic Signature: {sig_status}")
+        logging.info(f"  Expected Payload: {payload_status}\n")
+
+    except Exception as e:
+        file_result["error"] = str(e)
+        logging.error(f"  [X] ERROR: {e}\n")
+
+    return file_result
 
 
 def validate_kek_folder(
@@ -150,11 +241,12 @@ def validate_kek_folder(
                 "verified": file_result["valid"]
             }
 
-            if file_result["valid"]:
-                logging.info("  [+] VALID\n")
-            else:
-                logging.warning("  [X] INVALID")
-                logging.warning("")
+            # Display results
+            sig_status = "VALID" if file_result["valid"] else "INVALID"
+            payload_status = "True" if file_result["payload_hash_valid"] else "False"
+            
+            logging.info(f"  Cryptographic Signature: {sig_status}")
+            logging.info(f"  Expected Payload: {payload_status}\n")
 
         except Exception as e:
             file_result["error"] = str(e)
@@ -211,25 +303,25 @@ def validate_kek_folder(
 
 
 def main() -> int:
-    """Main entry point for validating KEK update files in a folder."""
+    """Main entry point for validating KEK update file(s)."""
     parser = argparse.ArgumentParser(
-        description="Validate all KEK update files in a folder"
+        description="Validate KEK update file(s) - single file or folder"
     )
     parser.add_argument(
-        "folder",
+        "path",
         type=Path,
-        help="Path to folder containing KEK update files"
+        help="Path to a KEK update file (.bin) or folder containing KEK update files"
     )
     parser.add_argument(
         "-o", "--output",
         type=Path,
         default=None,
-        help="Path to output JSON file (default: <folder>_validation_results.json)"
+        help="Path to output JSON file (default: <path>_validation_results.json, always generated)"
     )
     parser.add_argument(
         "-r", "--recursive",
         action="store_true",
-        help="Process subdirectories recursively"
+        help="Process subdirectories recursively (only applicable for folders)"
     )
     parser.add_argument(
         "-v", "--verbose",
@@ -251,29 +343,67 @@ def main() -> int:
         format='%(message)s'
     )
 
-    # Validate folder exists
-    if not args.folder.exists():
-        logging.error(f"Folder not found: {args.folder}")
+    # Validate path exists
+    if not args.path.exists():
+        logging.error(f"Path not found: {args.path}")
         return 1
 
-    if not args.folder.is_dir():
-        logging.error(f"Not a directory: {args.folder}")
-        return 1
+    # Determine if path is a file or directory
+    if args.path.is_file():
+        # Validate single file
+        if not args.path.suffix == '.bin':
+            logging.error(f"File must have .bin extension: {args.path}")
+            return 1
 
-    # Determine output file
-    if args.output is None:
-        output_file = args.folder.parent / f"{args.folder.name}_validation_results.json"
+        # Determine output file
+        if args.output is None:
+            output_file = args.path.parent / f"{args.path.stem}_validation_results.json"
+        else:
+            output_file = args.output
+
+        # Validate the single file
+        file_result = validate_single_kek(args.path, quiet=args.quiet)
+
+        # Create results structure
+        results = {
+            "validation_date": datetime.now(timezone.utc).isoformat(),
+            "file": str(args.path),
+            "parameters": {
+                "var_name": KEK_NAME,
+                "var_guid": KEK_GUID,
+                "attributes": KEK_ATTRIBUTES
+            },
+            "result": file_result
+        }
+
+        # Save to file
+        with open(output_file, 'w') as f:
+            json.dump(results, f, indent=2)
+        logging.info(f"Results saved to: {output_file}")
+
+        # Return exit code based on validation
+        return 0 if file_result["valid"] else 1
+
+    elif args.path.is_dir():
+        # Validate folder
+        # Determine output file
+        if args.output is None:
+            output_file = args.path.parent / f"{args.path.name}_validation_results.json"
+        else:
+            output_file = args.output
+
+        # Run validation
+        results = validate_kek_folder(args.path, output_file, quiet=args.quiet, recursive=args.recursive)
+
+        # Return exit code based on results
+        if results["summary"]["invalid"] > 0:
+            return 1
+
+        return 0
+
     else:
-        output_file = args.output
-
-    # Run validation
-    results = validate_kek_folder(args.folder, output_file, quiet=args.quiet, recursive=args.recursive)
-
-    # Return exit code based on results
-    if results["summary"]["invalid"] > 0:
+        logging.error(f"Invalid path type: {args.path}")
         return 1
-
-    return 0
 
 
 if __name__ == "__main__":
