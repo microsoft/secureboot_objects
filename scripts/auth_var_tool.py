@@ -705,8 +705,9 @@ def _convert_hex_strings_to_readable(content: str) -> str:
             except UnicodeDecodeError:
                 pass
 
-        except (ValueError, IndexError):
-            pass
+        except (ValueError, IndexError) as e:
+            # Failed to decode hex string as ASN.1 or UTF-8; this is expected for some values.
+            logging.debug(f"Failed to decode hex string '{hex_string}': {e}")
 
         # If decoding fails, return original
         return match.group(0)
