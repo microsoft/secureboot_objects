@@ -138,7 +138,7 @@ def process_single_file(file_path: str, save_der: bool = True) -> None:
         logging.info("Signing certificate extracted successfully.")
 
         if save_der:
-            certificate_file = file_path + "_signing_certificate.der"
+            certificate_file = file_path + ".signing_certificate.der"
             with open(certificate_file, "wb") as cert_file:
                 cert_file.write(certificate)
             logging.info(f"Certificate saved as '{certificate_file}'")
