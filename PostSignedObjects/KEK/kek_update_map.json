@@ -3551,6 +3551,14 @@
             "issued_by": "CN=RAZER Certificate"
         }
     },
+    "fdfc7f3c7ef3e05776add79878216c9be0e19597": {
+        "KEKUpdate": "RedHat/KEKUpdate_RedHat_PK1.bin",
+        "Certificate": {
+            "serial_number": "fef588e8f396c0f1",
+            "issued_to": "1.2.840.113549.1.9.1=secalert@redhat.com,CN=Red Hat Secure Boot (PK/KEK key 1)",
+            "issued_by": "1.2.840.113549.1.9.1=secalert@redhat.com,CN=Red Hat Secure Boot (PK/KEK key 1)"
+        }
+    },
     "a1bfcf363fb87908679239b2bd9cb632277eecd9": {
         "KEKUpdate": "Samsung Mobile/KEKUpdate_Samsung_Mobile_PK7.bin",
         "Certificate": {
