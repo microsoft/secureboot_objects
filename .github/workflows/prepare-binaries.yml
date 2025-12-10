@@ -32,7 +32,7 @@ jobs:
 
     steps:
     - name: Checkout Self
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Generate Token
       if: github.event_name == 'release'
