@@ -3319,6 +3319,14 @@
             "issued_by": "CN=Microsoft Surface NFF UEFI PK CA 2015,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US"
         }
     },
+    "3d8660c0cb2d57b189c3d7995572a552f75e48b5": {
+        "KEKUpdate": "Microsoft/KEKUpdate_Microsoft_PK3d8660c0.bin",
+        "Certificate": {
+            "serial_number": "3300000014e8c838dede044ea7000000000014",
+            "issued_to": "CN=Windows OEM Devices PK,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US",
+            "issued_by": "CN=Microsoft RSA Third Party PCA 2023,O=Microsoft Corporation,C=US"
+        }
+    },
     "5b08e17664ccf0f114b7d9208dbb140bac4b4ec4": {
         "KEKUpdate": "Microsoft/KEKUpdate_Microsoft_PK4.bin",
         "Certificate": {
