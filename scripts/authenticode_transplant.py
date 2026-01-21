@@ -33,7 +33,7 @@ import logging
 import os
 import struct
 import sys
-from typing import Dict, List, Optional, Protocol, Tuple, runtime_checkable
+from typing import Any, Dict, List, Optional, Protocol, Tuple, runtime_checkable
 
 import pefile
 from cryptography import x509
@@ -218,7 +218,7 @@ def _extract_certificates_from_pkcs7(pkcs7_data: bytes) -> List[x509.Certificate
     return certificates
 
 
-def _verify_pkcs7_signature(pkcs7_data: bytes, pe_data: bytes) -> dict:
+def _verify_pkcs7_signature(pkcs7_data: bytes, pe_data: bytes) -> Dict[str, Any]:
     """Verify PKCS7 Authenticode signature against PE file.
 
     This function:
@@ -232,7 +232,10 @@ def _verify_pkcs7_signature(pkcs7_data: bytes, pe_data: bytes) -> dict:
         pe_data: The full PE file data
 
     Returns:
-        dict: Verification results with 'verified' boolean and list of 'signers'
+        Dict[str, Any]: Verification results with keys:
+            - 'verified' (bool): Overall verification status
+            - 'signers' (List[Dict]): List of signer verification results
+            - 'errors' (List[str]): List of error messages
     """
     results = {
         'verified': False,
@@ -432,33 +435,36 @@ def compute_authenticode_hash(pe_data: bytes, hash_algorithm: Optional[object] =
 
     pe = pefile.PE(data=pe_data, fast_load=True)
 
-    security_directory = pe.OPTIONAL_HEADER.DATA_DIRECTORY[
-        pefile.DIRECTORY_ENTRY["IMAGE_DIRECTORY_ENTRY_SECURITY"]
-    ]
-    checksum_offset = pe.OPTIONAL_HEADER.dump_dict()["CheckSum"]["FileOffset"]
-    certificate_table_offset = security_directory.dump_dict()["VirtualAddress"]["FileOffset"]
-    certificate_virtual_addr = security_directory.VirtualAddress
-    certificate_size = security_directory.Size
+    try:
+        security_directory = pe.OPTIONAL_HEADER.DATA_DIRECTORY[
+            pefile.DIRECTORY_ENTRY["IMAGE_DIRECTORY_ENTRY_SECURITY"]
+        ]
+        checksum_offset = pe.OPTIONAL_HEADER.dump_dict()["CheckSum"]["FileOffset"]
+        certificate_table_offset = security_directory.dump_dict()["VirtualAddress"]["FileOffset"]
+        certificate_virtual_addr = security_directory.VirtualAddress
+        certificate_size = security_directory.Size
 
-    hash_data = (
-        pe_data[:checksum_offset] + pe_data[checksum_offset + 0x04 : certificate_table_offset]
-    )
-    hash_data += (
-        pe_data[certificate_table_offset + 0x08 : certificate_virtual_addr]
-        + pe_data[certificate_virtual_addr + certificate_size :]
-    )
+        hash_data = (
+            pe_data[:checksum_offset] + pe_data[checksum_offset + 0x04 : certificate_table_offset]
+        )
+        hash_data += (
+            pe_data[certificate_table_offset + 0x08 : certificate_virtual_addr]
+            + pe_data[certificate_virtual_addr + certificate_size :]
+        )
 
-    # Map cryptography hash algorithm to hashlib
-    if isinstance(hash_algorithm, crypto_hashes.SHA256):
-        return hashlib.sha256(hash_data).digest()
-    elif isinstance(hash_algorithm, crypto_hashes.SHA1):
-        return hashlib.sha1(hash_data).digest()
-    elif isinstance(hash_algorithm, crypto_hashes.SHA384):
-        return hashlib.sha384(hash_data).digest()
-    elif isinstance(hash_algorithm, crypto_hashes.SHA512):
-        return hashlib.sha512(hash_data).digest()
-    else:
-        raise ValueError(f"Unsupported hash algorithm: {hash_algorithm}")
+        # Map cryptography hash algorithm to hashlib
+        if isinstance(hash_algorithm, crypto_hashes.SHA256):
+            return hashlib.sha256(hash_data).digest()
+        elif isinstance(hash_algorithm, crypto_hashes.SHA1):
+            return hashlib.sha1(hash_data).digest()
+        elif isinstance(hash_algorithm, crypto_hashes.SHA384):
+            return hashlib.sha384(hash_data).digest()
+        elif isinstance(hash_algorithm, crypto_hashes.SHA512):
+            return hashlib.sha512(hash_data).digest()
+        else:
+            raise ValueError(f"Unsupported hash algorithm: {hash_algorithm}")
+    finally:
+        pe.close()
 
 
 def get_authenticode_hash(pe_path: str, fs: FileSystemInterface = None) -> str:
