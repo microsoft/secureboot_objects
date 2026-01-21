@@ -135,10 +135,14 @@ def _extract_pe_hash_from_spc_indirect_data(content_bytes: bytes) -> Tuple[Optio
     # Format: [0x06 (OID tag), length, OID bytes...]
     OID_SHA1_DER = b'\x06\x05\x2b\x0e\x03\x02\x1a'  # 1.3.14.3.2.26
     OID_SHA256_DER = b'\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x01'  # 2.16.840.1.101.3.4.2.1
+    OID_SHA384_DER = b'\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x02'  # 2.16.840.1.101.3.4.2.2
+    OID_SHA512_DER = b'\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x03'  # 2.16.840.1.101.3.4.2.3
 
     # String representations of OIDs
     OID_SHA1_STRING = '1.3.14.3.2.26'
     OID_SHA256_STRING = '2.16.840.1.101.3.4.2.1'
+    OID_SHA384_STRING = '2.16.840.1.101.3.4.2.2'
+    OID_SHA512_STRING = '2.16.840.1.101.3.4.2.3'
 
     # Search parameters
     OID_SEARCH_WINDOW = 50  # Bytes to search before hash for algorithm OID
