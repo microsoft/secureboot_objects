@@ -693,6 +693,7 @@ def _convert_hex_strings_to_readable(content: str) -> str:
                         if decoded.isprintable() or all(c in '\t\n\r' or c.isprintable() for c in decoded):
                             return f'{indent}{hex_string} ("{decoded}")'
                     except (UnicodeDecodeError, AttributeError):
+                        # Decoding failed; ignore and try the next decoding strategy.
                         pass
 
             # If it's not ASN.1 encoded, try direct UTF-8 decode
