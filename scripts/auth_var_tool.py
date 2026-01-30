@@ -666,7 +666,6 @@ def _convert_hex_strings_to_readable(content: str) -> str:
     str
         The content with hex strings converted to readable format where possible
     """
-    import re
 
     # Pattern to match hex value lines like "         value=0x131a444f204e4f54..."
     pattern = r'([ ]*value=)(0x[0-9a-fA-F]+)'
