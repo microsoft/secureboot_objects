@@ -208,7 +208,6 @@ def validate_kek_folder(
 
             # Validate the file using auth_var_tool.verify_variable
             # Create a namespace object with the required arguments
-            import argparse
             verify_args = argparse.Namespace(
                 authvar_file=str(bin_file),
                 var_name=KEK_NAME,
