@@ -35,7 +35,7 @@ def validate_single_kek(
 
     Args:
         kek_file: Path to KEK update file
-        quiet: If True, suppress validation output from the prototype
+        quiet: If True, suppress validation output from the verification process
 
     Returns:
         dict: Validation result for the file
