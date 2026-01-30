@@ -961,10 +961,10 @@ def parse_args() -> argparse.Namespace:
         "--debug", action="store_true", default=False, help="enables debug printing for deep inspection"
     )
 
-    subparsers = setup_format_parser(subparsers)
-    subparsers = setup_sign_parser(subparsers)
-    subparsers = setup_describe_parser(subparsers)
-    subparsers = setup_verify_parser(subparsers)
+    setup_format_parser(subparsers)
+    setup_sign_parser(subparsers)
+    setup_describe_parser(subparsers)
+    setup_verify_parser(subparsers)
 
     args = parser.parse_args()
     # Create output directory if it doesn't exist (after parsing args)
