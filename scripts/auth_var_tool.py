@@ -703,6 +703,7 @@ def _convert_hex_strings_to_readable(content: str) -> str:
                 if decoded.isprintable() or all(c in '\t\n\r' or c.isprintable() for c in decoded):
                     return f'{indent}{hex_string} ("{decoded}")'
             except UnicodeDecodeError:
+                # Ignore decode errors: not all byte sequences are valid UTF-8, so skip these cases.
                 pass
 
         except (ValueError, IndexError) as e:
