@@ -128,7 +128,7 @@ def validate_kek_folder(
     Args:
         folder_path: Path to folder containing KEK update files
         output_file: Optional path to output JSON file
-        quiet: If True, suppress validation output from the prototype
+        quiet: If True, suppress validation output from the verification process
         recursive: If True, process subdirectories recursively
 
     Returns:
