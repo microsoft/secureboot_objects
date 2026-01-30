@@ -72,7 +72,6 @@ def validate_single_kek(
 
         # Validate the file using auth_var_tool.verify_variable
         # Create a namespace object with the required arguments
-        import argparse
         verify_args = argparse.Namespace(
             authvar_file=str(kek_file),
             var_name=KEK_NAME,
