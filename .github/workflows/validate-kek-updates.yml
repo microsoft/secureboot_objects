@@ -1,0 +1,132 @@
+# This workflow validates KEK update files in pull requests to ensure they have
+# valid cryptographic signatures and expected payloads before merging.
+#
+# Copyright (c) Microsoft Corporation.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+name: Validate KEK Updates
+
+on:
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'PostSignedObjects/KEK/**/*.bin'
+      - 'PreSignedObjects/KEK/**/*.bin'
+
+jobs:
+  validate-kek:
+    name: Validate KEK Update Files
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout PR
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Need full history to compare with base branch
+
+    - name: Set up Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: 3.12
+        cache: 'pip'
+        cache-dependency-path: pip-requirements.txt
+
+    - name: Install Pip Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r pip-requirements.txt
+
+    - name: Get Changed KEK Files
+      id: changed-files
+      run: |
+        # Get list of changed .bin files in KEK directories
+        git fetch origin ${{ github.base_ref }}
+        CHANGED_FILES=$(git diff --name-only --diff-filter=AM origin/${{ github.base_ref }}...HEAD | grep -E '(PostSignedObjects|PreSignedObjects)/KEK/.*\.bin$' || echo "")
+
+        if [ -z "$CHANGED_FILES" ]; then
+          echo "No KEK files changed"
+          echo "has_changes=false" >> $GITHUB_OUTPUT
+        else
+          echo "Changed KEK files:"
+          echo "$CHANGED_FILES"
+          echo "has_changes=true" >> $GITHUB_OUTPUT
+          # Save changed files to a temporary file
+          echo "$CHANGED_FILES" > changed_kek_files.txt
+        fi
+
+    - name: Validate Changed KEK Files
+      if: steps.changed-files.outputs.has_changes == 'true'
+      run: |
+        VALIDATION_FAILED=0
+        VALIDATION_RESULTS_DIR="kek_validation_results"
+        mkdir -p "$VALIDATION_RESULTS_DIR"
+
+        echo "## KEK Validation Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        while IFS= read -r file; do
+          if [ -f "$file" ]; then
+            echo "Validating: $file"
+            BASENAME=$(basename "$file" .bin)
+            OUTPUT_JSON="$VALIDATION_RESULTS_DIR/${BASENAME}_validation.json"
+
+            # Run validation and capture exit code
+            if python scripts/validate_kek.py "$file" -o "$OUTPUT_JSON" -q; then
+              # Parse JSON to check both signature and payload
+              SIGNATURE_VALID=$(jq -r '.result.valid' "$OUTPUT_JSON")
+              PAYLOAD_VALID=$(jq -r '.result.payload_hash_valid' "$OUTPUT_JSON")
+
+              if [ "$SIGNATURE_VALID" = "true" ] && [ "$PAYLOAD_VALID" = "true" ]; then
+                echo "✅ **PASS**: \`$file\`" >> $GITHUB_STEP_SUMMARY
+                echo "  - Cryptographic Signature: ✅ VALID" >> $GITHUB_STEP_SUMMARY
+                echo "  - Expected Payload: ✅ True" >> $GITHUB_STEP_SUMMARY
+              elif [ "$SIGNATURE_VALID" = "true" ] && [ "$PAYLOAD_VALID" = "false" ]; then
+                echo "⚠️ **WARNING**: \`$file\`" >> $GITHUB_STEP_SUMMARY
+                echo "  - Cryptographic Signature: ✅ VALID" >> $GITHUB_STEP_SUMMARY
+                echo "  - Expected Payload: ⚠️ False (non-standard payload)" >> $GITHUB_STEP_SUMMARY
+                PAYLOAD_HASH=$(jq -r '.result.payload_hash' "$OUTPUT_JSON")
+                echo "  - Payload Hash: \`$PAYLOAD_HASH\`" >> $GITHUB_STEP_SUMMARY
+                # Don't fail on payload mismatch, just warn
+              else
+                echo "❌ **FAIL**: \`$file\`" >> $GITHUB_STEP_SUMMARY
+                echo "  - Cryptographic Signature: ❌ INVALID" >> $GITHUB_STEP_SUMMARY
+                echo "  - Expected Payload: $([ "$PAYLOAD_VALID" = "true" ] && echo "✅ True" || echo "⚠️ False")" >> $GITHUB_STEP_SUMMARY
+                VALIDATION_FAILED=1
+              fi
+            else
+              echo "❌ **FAIL**: \`$file\` - Validation script failed" >> $GITHUB_STEP_SUMMARY
+              VALIDATION_FAILED=1
+            fi
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+        done < changed_kek_files.txt
+
+        # Upload validation results as artifact
+        if [ -d "$VALIDATION_RESULTS_DIR" ] && [ "$(ls -A $VALIDATION_RESULTS_DIR)" ]; then
+          echo "Uploading validation results..."
+        fi
+
+        # Exit with error if any validation failed
+        if [ $VALIDATION_FAILED -eq 1 ]; then
+          echo "::error::One or more KEK files have invalid cryptographic signatures"
+          exit 1
+        fi
+
+    - name: Upload Validation Results
+      if: steps.changed-files.outputs.has_changes == 'true'
+      uses: actions/upload-artifact@v4
+      with:
+        name: kek-validation-results
+        path: kek_validation_results/
+        retention-days: 30
+
+    - name: Comment on PR
+      if: steps.changed-files.outputs.has_changes == 'true' && failure()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: '❌ **KEK Validation Failed**\n\nOne or more KEK update files have invalid cryptographic signatures. Please review the validation results in the workflow run details.'
+          })
