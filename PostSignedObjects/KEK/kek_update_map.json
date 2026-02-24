@@ -47,6 +47,14 @@
             "issued_by": "CN=Dell secure boot platform key 2022,O=Dell Technologies Inc.,L=Portland,ST=California,C=US"
         }
     },
+    "5ecf2d6a6727b27ab195498d9c10d8ae88d3d606": {
+        "KEKUpdate": "Adlink/KEKUpdate_Adlink_PK5ECF2D6A.bin",
+        "Certificate": {
+            "serial_number": "86a97d2c010f0059",
+            "issued_to": "CN=Adlink Platform Key,O=Adlink Technology Inc.,L=Taipei,ST=Taiwan,C=TW",
+            "issued_by": "CN=Adlink Platform Key,O=Adlink Technology Inc.,L=Taipei,ST=Taiwan,C=TW"
+        }
+    },
     "9a3056b5260f628645b4d9ac61aebd8060305c3e": {
         "KEKUpdate": "AMI/KEKUpdate_AMI_PK1.bin",
         "Certificate": {
@@ -3640,7 +3648,7 @@
         }
     },
     "31c22f2a60bc83a1e361ee6959b5cdd7f4940a5e": {
-        "KEKUpdate": "TONGFANG\\KEKUpdate_TONGFANG_PK31C22F2A.bin",
+        "KEKUpdate": "TONGFANG/KEKUpdate_TONGFANG_PK31C22F2A.bin",
         "Certificate": {
             "serial_number": "24663bc83929aaac28419a3edca63bed893ff3d5",
             "issued_to": "CN=AIStoneGlobal Platform Key 2024",
@@ -3749,14 +3757,6 @@
             "serial_number": "a44e3278bce99498",
             "issued_to": "CN=ZEBRA Technologies",
             "issued_by": "CN=ZEBRA Technologies"
-        }
-    },
-    "fdfc7f3c7ef3e05776add79878216c9be0e19597": {
-        "KEKUpdate": "RedHat\\KEKUpdate_RedHat_PK1.bin",
-        "Certificate": {
-            "serial_number": 18371740789028339953,
-            "issued_to": "CN=Red Hat Secure Boot (PK/KEK key 1), emailAddress=secalert@redhat.com",
-            "issued_by": "CN=Red Hat Secure Boot (PK/KEK key 1), emailAddress=secalert@redhat.com"
         }
     }
 }
