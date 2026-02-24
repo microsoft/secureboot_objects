@@ -207,6 +207,14 @@
             "issued_by": "CN=Dell secure boot platform key 2022,O=Dell Technologies Inc.,L=Portland,ST=California,C=US"
         }
     },
+    "5ecf2d6a6727b27ab195498d9c10d8ae88d3d606": {
+        "KEKUpdate": "Adlink/KEKUpdate_Adlink_PK5ECF2D6A.bin",
+        "Certificate": {
+            "serial_number": "86a97d2c010f0059",
+            "issued_to": "CN=Adlink Platform Key,O=Adlink Technology Inc.,L=Taipei,ST=Taiwan,C=TW",
+            "issued_by": "CN=Adlink Platform Key,O=Adlink Technology Inc.,L=Taipei,ST=Taiwan,C=TW"
+        }
+    },
     "f77be268ff7cd9691721db46df7405b93fc4ee89": {
         "KEKUpdate": "Attis/KEKUpdate_Attis_PK1.bin",
         "Certificate": {
