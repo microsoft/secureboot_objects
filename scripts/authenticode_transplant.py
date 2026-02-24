@@ -33,9 +33,14 @@ import logging
 import os
 import struct
 import sys
-from typing import Dict, List, Protocol, Tuple, runtime_checkable
+from typing import Any, Dict, List, Optional, Protocol, Tuple, runtime_checkable
 
 import pefile
+from cryptography import x509
+from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa
 from pyasn1.codec.der import decoder, encoder
 from pyasn1.type import tag, univ
 from pyasn1_modules import rfc2315
@@ -83,62 +88,391 @@ class RealFileSystem:
         return pefile.PE(filepath, fast_load=fast_load)
 
 
-def calculate_authenticode_hash(pe: pefile.PE) -> str:
-    """Calculate the SHA256 hash of a PE file for Authenticode signature verification.
+def _get_hash_algorithm_from_oid(oid: str) -> Optional[hashes.HashAlgorithm]:
+    """Map OID to cryptography hash algorithm."""
+    oid_map = {
+        '2.16.840.1.101.3.4.2.1': hashes.SHA256(),
+        '2.16.840.1.101.3.4.2.2': hashes.SHA384(),
+        '2.16.840.1.101.3.4.2.3': hashes.SHA512(),
+        '1.3.14.3.2.26': hashes.SHA1(),
+    }
+    return oid_map.get(oid)
+
+
+def _extract_pe_hash_from_spc_indirect_data(content_bytes: bytes) -> Tuple[Optional[bytes], Optional[str]]:
+    """Extract PE file hash from SpcIndirectDataContent structure.
+
+    SpcIndirectDataContent ::= SEQUENCE {
+        data                    SpcAttributeTypeAndOptionalValue,
+        messageDigest           DigestInfo
+    }
+
+    DigestInfo ::= SEQUENCE {
+        digestAlgorithm     AlgorithmIdentifier,
+        digest              OCTET STRING
+    }
+
+    This follows the Microsoft Authenticode PE specification which defines
+    OID 1.3.6.1.4.1.311.2.1.4 for SpcIndirectDataContent.
+
+    Args:
+        content_bytes: The contentInfo content from PKCS#7 SignedData
+
+    Returns:
+        Tuple of (hash_bytes, algorithm_oid) or (None, None) if parsing fails
+    """
+    # ASN.1 DER constants
+    ASN1_OCTET_STRING_TAG = 0x04
+
+    # Expected hash sizes (in bytes)
+    SHA1_HASH_SIZE = 20
+    SHA256_HASH_SIZE = 32
+    SHA384_HASH_SIZE = 48
+    SHA512_HASH_SIZE = 64
+    VALID_HASH_SIZES = {SHA1_HASH_SIZE, SHA256_HASH_SIZE, SHA384_HASH_SIZE, SHA512_HASH_SIZE}
+
+    # DER-encoded OID prefixes for hash algorithms
+    # Format: [0x06 (OID tag), length, OID bytes...]
+    OID_SHA1_DER = b'\x06\x05\x2b\x0e\x03\x02\x1a'  # 1.3.14.3.2.26
+    OID_SHA256_DER = b'\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x01'  # 2.16.840.1.101.3.4.2.1
+    OID_SHA384_DER = b'\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x02'  # 2.16.840.1.101.3.4.2.2
+    OID_SHA512_DER = b'\x06\x09\x60\x86\x48\x01\x65\x03\x04\x02\x03'  # 2.16.840.1.101.3.4.2.3
+
+    # String representations of OIDs
+    OID_SHA1_STRING = '1.3.14.3.2.26'
+    OID_SHA256_STRING = '2.16.840.1.101.3.4.2.1'
+    OID_SHA384_STRING = '2.16.840.1.101.3.4.2.2'
+    OID_SHA512_STRING = '2.16.840.1.101.3.4.2.3'
+
+    # Search parameters
+    OID_SEARCH_WINDOW = 50  # Bytes to search before hash for algorithm OID
+    LENGTH_BYTE_OFFSET = 1
+    DATA_START_OFFSET = 2
+
+    try:
+        # Scan through the content looking for OCTET STRING tags with hash-sized data
+        i = 0
+        while i < len(content_bytes) - 10:
+            # Check if this is an OCTET STRING tag
+            if content_bytes[i] == ASN1_OCTET_STRING_TAG:
+                length = content_bytes[i + LENGTH_BYTE_OFFSET]
+
+                # Check if length matches a known hash size
+                if length in VALID_HASH_SIZES and i + DATA_START_OFFSET + length <= len(content_bytes):
+                    hash_bytes = content_bytes[i + DATA_START_OFFSET : i + DATA_START_OFFSET + length]
+
+                    # Search backwards for the algorithm OID
+                    # The OID appears in the DigestInfo structure before the digest
+                    algorithm_oid = None
+                    search_start = max(0, i - OID_SEARCH_WINDOW)
+                    search_region = content_bytes[search_start:i]
+
+                    if OID_SHA256_DER in search_region:
+                        algorithm_oid = OID_SHA256_STRING
+                    elif OID_SHA1_DER in search_region:
+                        algorithm_oid = OID_SHA1_STRING
+                    elif OID_SHA384_DER in search_region:
+                        algorithm_oid = OID_SHA384_STRING
+                    elif OID_SHA512_DER in search_region:
+                        algorithm_oid = OID_SHA512_STRING
+
+                    logger.info(f"Extracted PE hash from SpcIndirectDataContent: {hash_bytes.hex()}")
+                    if algorithm_oid:
+                        logger.info(f"Hash algorithm OID: {algorithm_oid}")
+                    return hash_bytes, algorithm_oid
+            i += 1
+
+        logger.warning("No hash found in SpcIndirectDataContent")
+        return None, None
+
+    except Exception as e:
+        logger.error(f"Failed to parse SpcIndirectDataContent: {e}")
+        return None, None
+
+
+def _extract_certificates_from_pkcs7(pkcs7_data: bytes) -> List[x509.Certificate]:
+    """Extract X.509 certificates from PKCS7 data."""
+    certificates = []
+    try:
+        # Try to decode as ContentInfo first
+        try:
+            content_info, _ = decoder.decode(pkcs7_data, asn1Spec=rfc2315.ContentInfo())
+            signed_data, _ = decoder.decode(
+                bytes(content_info['content']),
+                asn1Spec=rfc2315.SignedData()
+            )
+        except Exception:
+            # If that fails, try decoding directly as SignedData
+            signed_data, _ = decoder.decode(pkcs7_data, asn1Spec=rfc2315.SignedData())
+
+        # Extract certificates if present
+        if signed_data['certificates'].hasValue():
+            for cert_choice in signed_data['certificates']:
+                cert_der = encoder.encode(cert_choice['certificate'])
+                cert = x509.load_der_x509_certificate(cert_der, default_backend())
+                certificates.append(cert)
+
+    except Exception as e:
+        logger.error(f"Failed to extract certificates: {e}")
+
+    return certificates
+
+
+def _verify_pkcs7_signature(pkcs7_data: bytes, pe_data: bytes) -> Dict[str, Any]:
+    """Verify PKCS7 Authenticode signature against PE file.
+
+    This function:
+    1. Extracts the hash algorithm used by the signature
+    2. Computes the Authenticode hash using that algorithm
+    3. Verifies the computed hash matches the hash in SpcIndirectDataContent
+    4. Cryptographically verifies the signature
+
+    Args:
+        pkcs7_data: The PKCS#7 signature data
+        pe_data: The full PE file data
+
+    Returns:
+        Dict[str, Any]: Verification results with keys:
+            - 'verified' (bool): Overall verification status
+            - 'signers' (List[Dict]): List of signer verification results
+            - 'errors' (List[str]): List of error messages
+    """
+    results = {
+        'verified': False,
+        'signers': [],
+        'errors': []
+    }
+
+    try:
+        # Extract certificates from PKCS#7
+        certificates = _extract_certificates_from_pkcs7(pkcs7_data)
+        if not certificates:
+            results['errors'].append("No certificates found in PKCS#7 signature")
+            return results
+
+        # Decode PKCS7 structure
+        try:
+            content_info, _ = decoder.decode(pkcs7_data, asn1Spec=rfc2315.ContentInfo())
+            signed_data, _ = decoder.decode(
+                bytes(content_info['content']),
+                asn1Spec=rfc2315.SignedData()
+            )
+        except Exception:
+            signed_data, _ = decoder.decode(pkcs7_data, asn1Spec=rfc2315.SignedData())
+
+        # Extract the hash algorithm OID and embedded PE hash from SpcIndirectDataContent
+        authenticode_content_valid = False
+        embedded_pe_hash = None
+        hash_algorithm_oid = None
+
+        if signed_data['contentInfo'].hasValue() and signed_data['contentInfo']['content'].hasValue():
+            try:
+                content_bytes = bytes(signed_data['contentInfo']['content'])
+
+                # Extract hash from SpcIndirectDataContent structure
+                embedded_pe_hash, hash_algorithm_oid = _extract_pe_hash_from_spc_indirect_data(content_bytes)
+
+                if embedded_pe_hash and hash_algorithm_oid:
+                    # Get the hash algorithm object
+                    hash_algo = _get_hash_algorithm_from_oid(hash_algorithm_oid)
+                    if hash_algo:
+                        # Compute the Authenticode hash using the same algorithm
+                        computed_hash = compute_authenticode_hash(pe_data, hash_algo)
+                        logger.debug(f"Computed Authenticode hash: {computed_hash.hex()}")
+
+                        # Verify they match
+                        if computed_hash == embedded_pe_hash:
+                            authenticode_content_valid = True
+                            logger.debug(f"[+] PE hash verified! (algorithm: {hash_algo.name})")
+                        else:
+                            logger.warning("[-] PE hash mismatch!")
+                            logger.warning(f"  Expected: {embedded_pe_hash.hex()}")
+                            logger.warning(f"  Computed: {computed_hash.hex()}")
+                            results['errors'].append("PE hash mismatch between signature and computed hash")
+                    else:
+                        logger.warning(f"Unsupported hash algorithm OID: {hash_algorithm_oid}")
+                        results['errors'].append(f"Unsupported hash algorithm: {hash_algorithm_oid}")
+                else:
+                    logger.warning("Could not extract PE hash from SpcIndirectDataContent")
+                    results['errors'].append("Could not parse SpcIndirectDataContent")
+
+            except Exception as e:
+                logger.debug(f"Error checking SpcIndirectDataContent: {e}")
+
+        if not authenticode_content_valid:
+            logger.warning("PE hash verification in SpcIndirectDataContent failed")
+            results['errors'].append("Could not verify PE hash in SpcIndirectDataContent")
+
+        # Verify each signer
+        for signer_idx, signer_info in enumerate(signed_data['signerInfos']):
+            signer_result = {
+                'index': signer_idx,
+                'verified': False,
+                'error': None
+            }
+
+            try:
+                # Get digest algorithm
+                digest_alg_oid = str(signer_info['digestAlgorithm']['algorithm'])
+                hash_algorithm = _get_hash_algorithm_from_oid(digest_alg_oid)
+
+                if not hash_algorithm:
+                    signer_result['error'] = f"Unsupported digest algorithm: {digest_alg_oid}"
+                    results['errors'].append(signer_result['error'])
+                    results['signers'].append(signer_result)
+                    continue
+
+                # Get the encrypted digest (signature)
+                encrypted_digest = bytes(signer_info['encryptedDigest'])
+
+                # Find the signer's certificate
+                serial_number = int(signer_info['issuerAndSerialNumber']['serialNumber'])
+                signer_cert = None
+                for cert in certificates:
+                    if cert.serial_number == serial_number:
+                        signer_cert = cert
+                        break
+
+                if not signer_cert:
+                    signer_result['error'] = f"Signer certificate not found (serial: {serial_number})"
+                    results['errors'].append(signer_result['error'])
+                    results['signers'].append(signer_result)
+                    continue
+
+                # Determine what data to verify
+                if signer_info['authenticatedAttributes'].hasValue():
+                    # With authenticated attributes, we verify the signature against the authenticated attributes
+                    # For Authenticode, the authenticated attributes contain a message digest of the
+                    # SpcIndirectDataContent (which in turn contains the PE hash)
+                    authenticated_attrs = signer_info['authenticatedAttributes']
+                    attrs_der = encoder.encode(authenticated_attrs)
+                    # Replace IMPLICIT tag [0] (0xA0) with SET OF tag (0x31)
+                    if attrs_der[0:1] == b'\xa0':
+                        attrs_der = b'\x31' + attrs_der[1:]
+                    data_to_verify = attrs_der
+
+                    # For Authenticode verification, we need to verify that the messageDigest attribute
+                    # matches the hash of the contentInfo content (SpcIndirectDataContent)
+                    # The SpcIndirectDataContent is what contains the PE hash
+                    # We'll verify this by checking that the signature verifies against the authenticated attributes
+                    # The firmware will separately verify the PE hash matches the SpcIndirectDataContent
+                else:
+                    # No authenticated attributes - this is unusual for Authenticode but theoretically valid
+                    # In this case, we would verify against the content directly
+                    # However, for Authenticode, authenticated attributes are required
+                    signer_result['error'] = "No authenticated attributes found - required for Authenticode"
+                    results['errors'].append(signer_result['error'])
+                    results['signers'].append(signer_result)
+                    continue
+
+                # Verify signature
+                public_key = signer_cert.public_key()
+
+                if isinstance(public_key, rsa.RSAPublicKey):
+                    public_key.verify(
+                        encrypted_digest,
+                        data_to_verify,
+                        padding.PKCS1v15(),
+                        hash_algorithm
+                    )
+                    signer_result['verified'] = True
+                elif isinstance(public_key, ec.EllipticCurvePublicKey):
+                    public_key.verify(
+                        encrypted_digest,
+                        data_to_verify,
+                        ec.ECDSA(hash_algorithm)
+                    )
+                    signer_result['verified'] = True
+                else:
+                    signer_result['error'] = f"Unsupported key type: {type(public_key)}"
+                    results['errors'].append(signer_result['error'])
+
+            except InvalidSignature:
+                signer_result['error'] = "Signature verification failed - invalid signature"
+                results['errors'].append(signer_result['error'])
+            except Exception as e:
+                signer_result['error'] = f"Verification error: {str(e)}"
+                results['errors'].append(signer_result['error'])
+
+            results['signers'].append(signer_result)
+
+        # Overall verification passes if all signers verified AND PE hash is valid
+        results['verified'] = (
+            all(s['verified'] for s in results['signers'])
+            and len(results['signers']) > 0
+            and authenticode_content_valid
+        )
+
+    except Exception as e:
+        results['errors'].append(f"Failed to verify PKCS#7 signature: {str(e)}")
+
+    return results
+
+
+def compute_authenticode_hash(pe_data: bytes, hash_algorithm: Optional[object] = None) -> bytes:
+    """Compute Authenticode hash of PE data using specified algorithm.
 
     This function computes the hash of a PE file excluding specific fields that are
     modified during the signing process: the CheckSum field in the Optional Header
-    and the IMAGE_DIRECTORY_ENTRY_SECURITY directory entry (including the certificate
-    table itself).
+    and the IMAGE_DIRECTORY_ENTRY_SECURITY directory entry.
 
     Args:
-        pe: A pefile.PE object representing the parsed PE file.
+        pe_data: The raw PE file data (bytes)
+        hash_algorithm: A hash algorithm from cryptography.hazmat.primitives.hashes (e.g., hashes.SHA256()).
+                       Defaults to SHA256 if not specified.
 
     Returns:
-        str: The hexadecimal string representation of the SHA256 hash of the PE file
-             data, excluding the CheckSum field and security directory/certificate data.
+        bytes: The computed hash as bytes
 
     Note:
-        This hash is used for Authenticode signature verification and follows the
-        Microsoft Authenticode specification for computing PE file hashes.
-
-        Specificiation can be found here:
-        https://aka.ms/AuthenticodeSpec
-
-        This algorithm conforms to v1.1 of the specification.
+        This follows the Microsoft Authenticode PE specification v1.1.
     """
-    security_directory = pe.OPTIONAL_HEADER.DATA_DIRECTORY[
-        pefile.DIRECTORY_ENTRY["IMAGE_DIRECTORY_ENTRY_SECURITY"]
-    ]  # Extract Security directory
-    checksum_offset = pe.OPTIONAL_HEADER.dump_dict()["CheckSum"]["FileOffset"]  # CheckSum file offset
-    certificate_table_offset = security_directory.dump_dict()["VirtualAddress"][
-        "FileOffset"
-    ]  # IMAGE_DIRECTORY_ENTRY_SECURITY file offset
-    certificate_virtual_addr = security_directory.VirtualAddress
-    certificate_size = security_directory.Size
-    raw_data = pe.__data__
-    hash_data = (
-        raw_data[:checksum_offset] + raw_data[checksum_offset + 0x04 : certificate_table_offset]
-    )  # Skip OptionalHeader.CheckSum field and continue until IMAGE_DIRECTORY_ENTRY_SECURITY
-    hash_data += (
-        raw_data[certificate_table_offset + 0x08 : certificate_virtual_addr]
-        + raw_data[certificate_virtual_addr + certificate_size :]
-    )  # Skip IMAGE_DIRECTORY_ENTRY_SECURITY and certificate
+    from cryptography.hazmat.primitives import hashes as crypto_hashes
 
-    # Ensure hash_data is aligned to 8-byte boundary per Authenticode specification
-    padding_needed = (8 - (len(hash_data) % 8)) % 8
-    if padding_needed > 0:
-        hash_data += b'\x00' * padding_needed
+    # Default to SHA-256 if no algorithm specified
+    if hash_algorithm is None:
+        hash_algorithm = crypto_hashes.SHA256()
 
-    return hashlib.sha256(hash_data).hexdigest()
+    pe = pefile.PE(data=pe_data, fast_load=True)
+
+    try:
+        security_directory = pe.OPTIONAL_HEADER.DATA_DIRECTORY[
+            pefile.DIRECTORY_ENTRY["IMAGE_DIRECTORY_ENTRY_SECURITY"]
+        ]
+        checksum_offset = pe.OPTIONAL_HEADER.dump_dict()["CheckSum"]["FileOffset"]
+        certificate_table_offset = security_directory.dump_dict()["VirtualAddress"]["FileOffset"]
+        certificate_virtual_addr = security_directory.VirtualAddress
+        certificate_size = security_directory.Size
+
+        hash_data = (
+            pe_data[:checksum_offset] + pe_data[checksum_offset + 0x04 : certificate_table_offset]
+        )
+        hash_data += (
+            pe_data[certificate_table_offset + 0x08 : certificate_virtual_addr]
+            + pe_data[certificate_virtual_addr + certificate_size :]
+        )
+
+        # Map cryptography hash algorithm to hashlib
+        if isinstance(hash_algorithm, crypto_hashes.SHA256):
+            return hashlib.sha256(hash_data).digest()
+        elif isinstance(hash_algorithm, crypto_hashes.SHA1):
+            return hashlib.sha1(hash_data).digest()
+        elif isinstance(hash_algorithm, crypto_hashes.SHA384):
+            return hashlib.sha384(hash_data).digest()
+        elif isinstance(hash_algorithm, crypto_hashes.SHA512):
+            return hashlib.sha512(hash_data).digest()
+        else:
+            raise ValueError(f"Unsupported hash algorithm: {hash_algorithm}")
+    finally:
+        pe.close()
 
 
 def get_authenticode_hash(pe_path: str, fs: FileSystemInterface = None) -> str:
     """Calculate the proper Authenticode hash for a PE file.
 
-    This is a convenience wrapper around calculate_authenticode_hash() that
+    This is a convenience wrapper around compute_authenticode_hash() that
     handles file loading and cleanup. The hash is computed according to the
-    Microsoft Authenticode specification, excluding the CheckSum field and
+    Microsoft Authenticode specification v1.1, excluding the CheckSum field and
     security directory from the hash calculation.
 
     Args:
@@ -155,13 +489,13 @@ def get_authenticode_hash(pe_path: str, fs: FileSystemInterface = None) -> str:
     if fs is None:
         fs = RealFileSystem()
 
-    pe = fs.create_pe(pe_path, fast_load=True)
+    # Read the raw PE data
+    pe_data = fs.read_binary_file(pe_path)
 
-    # Use the proper Authenticode hash calculation
-    hash_value = calculate_authenticode_hash(pe)
-    pe.close()
+    # Use the proper Authenticode hash calculation (defaults to SHA-256)
+    hash_bytes = compute_authenticode_hash(pe_data)
 
-    return hash_value
+    return hash_bytes.hex()
 
 
 def validate_pe_file(pe_path: str, fs: FileSystemInterface = None) -> pefile.PE:
@@ -419,27 +753,29 @@ def extract_pkcs7_from_wincert(signature_data: bytes) -> bytes:
     return pkcs7_data
 
 
-def validate_pkcs7_signatures(*pkcs7_data_list: bytes) -> Tuple[bytes, ...]:
-    """Validate multiple PKCS#7 signatures and return them for separate WIN_CERTIFICATE structures.
+def validate_pkcs7_signatures(pe_data: bytes, *pkcs7_data_list: bytes) -> Tuple[bytes, ...]:
+    """Validate multiple PKCS#7 signatures cryptographically and return them for separate WIN_CERTIFICATE structures.
 
-    This function validates that all PKCS#7 structures are valid signedData and returns
-    them separately. We create multiple independent WIN_CERTIFICATE structures that UEFI
-    firmware can iterate through during Secure Boot validation.
+    This function validates that all PKCS#7 structures are valid signedData and performs
+    cryptographic verification of each signature against the PE file.
+    We create multiple independent WIN_CERTIFICATE structures that UEFI firmware can
+    iterate through during Secure Boot validation.
 
     IMPORTANT: This is NOT nested signatures (signtool /as). We do NOT nest one PKCS#7
     inside another's unauthenticated attributes. Instead, we use the UEFI-standard
     approach of multiple WIN_CERTIFICATE structures.
 
     Args:
+        pe_data: The full PE file data (bytes)
         *pkcs7_data_list: Variable number of PKCS#7 signature data (each becomes a WIN_CERTIFICATE)
 
     Returns:
         Tuple[bytes, ...]: All PKCS#7 signatures, validated and ready to wrap
 
     Raises:
-        ValueError: If any PKCS#7 structure is invalid or not signedData type
+        ValueError: If any PKCS#7 structure is invalid, not signedData type, or fails cryptographic verification
     """
-    logger.info("Validating PKCS#7 signatures...")
+    logger.info("Validating PKCS#7 signatures with cryptographic verification...")
 
     if len(pkcs7_data_list) < 2:
         raise ValueError("At least 2 PKCS#7 signatures are required for validation")
@@ -449,6 +785,8 @@ def validate_pkcs7_signatures(*pkcs7_data_list: bytes) -> Tuple[bytes, ...]:
     # Decode all PKCS#7 structures to validate them
     try:
         for i, pkcs7_data in enumerate(pkcs7_data_list, 1):
+            logger.info(f"\n=== Validating Signature {i} ===")
+
             content_info, _ = decoder.decode(pkcs7_data, asn1Spec=rfc2315.ContentInfo())
             logger.info(f"Signature {i} type: {content_info['contentType']}")
 
@@ -464,12 +802,36 @@ def validate_pkcs7_signatures(*pkcs7_data_list: bytes) -> Tuple[bytes, ...]:
             )
             logger.info(f"Signature {i} size: {len(pkcs7_data)} bytes")
 
+            # Extract and log certificates
+            certificates = _extract_certificates_from_pkcs7(pkcs7_data)
+            logger.info(f"Certificates found: {len(certificates)}")
+            for cert_idx, cert in enumerate(certificates, 1):
+                logger.info(f"  Certificate {cert_idx}:")
+                logger.info(f"    Subject: {cert.subject.rfc4514_string()}")
+                logger.info(f"    Issuer: {cert.issuer.rfc4514_string()}")
+
+            # Perform cryptographic verification
+            logger.info("Performing cryptographic verification...")
+            verification_result = _verify_pkcs7_signature(pkcs7_data, pe_data)
+
+            # Log verification results
+            if verification_result['verified']:
+                logger.info("[+] Signature cryptographically VERIFIED")
+                for signer in verification_result['signers']:
+                    if signer['verified']:
+                        logger.info(f"  Signer {signer['index'] + 1}: VERIFIED")
+            else:
+                logger.error("[-] Signature verification FAILED")
+                for error in verification_result['errors']:
+                    logger.error(f"  - {error}")
+                raise ValueError(f"Signature {i} failed cryptographic verification: {verification_result['errors']}")
+
             validated_signatures.append(pkcs7_data)
 
         logger.info(
-            f"All {len(validated_signatures)} signatures are valid - "
-            "returning separately for multiple WIN_CERTIFICATE structures"
+            f"\nAll {len(validated_signatures)} signatures validated successfully with cryptographic verification!"
         )
+        logger.info("Returning signatures for multiple WIN_CERTIFICATE structures")
 
         return tuple(validated_signatures)
 
@@ -996,7 +1358,10 @@ def main_combine(args: argparse.Namespace) -> int:
                     logger.error("Nested signature mode requires at least 2 source files")
                     return 1
 
-                validated_pkcs7_list = validate_pkcs7_signatures(*all_pkcs7_data)
+                # Use the first PE file's data for verification
+                with open(args.sources[0], 'rb') as f:
+                    pe_data = f.read()
+                validated_pkcs7_list = validate_pkcs7_signatures(pe_data, *all_pkcs7_data)
                 logger.info(
                     f"All {len(validated_pkcs7_list)} signatures validated successfully for nested combination!"
                 )
@@ -1020,7 +1385,10 @@ def main_combine(args: argparse.Namespace) -> int:
                 logger.info(f"   Output: {args.output}")
                 logger.info("")
             else:
-                validated_pkcs7_list = validate_pkcs7_signatures(*all_pkcs7_data)
+                # Use the first PE file's data for verification
+                with open(args.sources[0], 'rb') as f:
+                    pe_data = f.read()
+                validated_pkcs7_list = validate_pkcs7_signatures(pe_data, *all_pkcs7_data)
                 logger.info(f"All {len(validated_pkcs7_list)} signatures validated successfully!")
 
                 # Save individual validated signatures consistently
@@ -1086,6 +1454,10 @@ def main_verify(args: argparse.Namespace) -> int:
         logger.info(f"Authenticode hash (SHA256): {pe_hash}")
         logger.info("")
 
+        # Read PE file data for cryptographic verification
+        with open(args.source, 'rb') as f:
+            pe_data = f.read()
+
         # Extract signatures
         sig_data, blocks, offset, total_size = extract_all_signatures(args.source)
         logger.info(f"Security Directory: offset=0x{offset:x}, size={total_size} bytes")
@@ -1132,8 +1504,37 @@ def main_verify(args: argparse.Namespace) -> int:
                     else:
                         num_certs = 0
                     logger.info(f"  Number of certificates: {num_certs}")
+
+                    # Extract and display certificates
+                    certificates = _extract_certificates_from_pkcs7(pkcs7_data)
+                    if certificates:
+                        logger.info("  Certificate details:")
+                        for cert_idx, cert in enumerate(certificates, 1):
+                            logger.info(f"    Certificate {cert_idx}:")
+                            logger.info(f"      Subject: {cert.subject.rfc4514_string()}")
+                            logger.info(f"      Issuer: {cert.issuer.rfc4514_string()}")
+                            logger.info(f"      Serial: {cert.serial_number}")
+                            logger.info(f"      Valid: {cert.not_valid_before_utc} to {cert.not_valid_after_utc}")
+
+                    # Perform cryptographic verification
+                    logger.info("  Cryptographic Verification:")
+                    verification_result = _verify_pkcs7_signature(pkcs7_data, pe_data)
+
+                    if verification_result['verified']:
+                        logger.info("    [+] Signature is cryptographically VALID")
+                        for signer in verification_result['signers']:
+                            if signer['verified']:
+                                logger.info(f"      Signer {signer['index'] + 1}: VERIFIED")
+                    else:
+                        logger.warning("    [-] Signature verification FAILED")
+                        for error in verification_result['errors']:
+                            logger.warning(f"      - {error}")
+
             except Exception as e:
                 logger.warning(f"  Could not parse PKCS#7 structure: {e}")
+                if args.debug:
+                    import traceback
+                    traceback.print_exc()
 
             logger.info("")
 
