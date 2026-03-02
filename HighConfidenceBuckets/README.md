@@ -1,11 +1,12 @@
 # High Confidence Buckets
 
-This directory contains a curated dataset of device firmware and hardware configurations
-that have been identified with high confidence from Windows telemetry to sucessfully apply the Secure Boot DB and KEK 2023 updates. These
-records are used to inform Secure Boot policy decisions — specifically, to
-determine which devices can safely receive and apply the certificate updates as part of the Latest Cumulative Updates (LCU).
-For background on the Secure Boot certificate renewal program, see
-[aka.ms/getSecureBoot](https://aka.ms/getSecureBoot).
+This directory contains a curated dataset of device firmware and hardware configurations that have been identified with high confidence from Windows telemetry to successfully apply the Secure Boot DB and KEK 2023 updates. These records can be used by: 
+
+1. Security and system admins to inform Secure Boot policy decisions — specifically, to determine which devices can safely receive and apply the certificate updates as part of the Latest Cumulative Updates (LCU). 
+2. Device manufacturers to audit which devices are being updated in the ecosystem
+3. Non-Windows operating systems, e.g. Linux distributions, to replicate the rollout performed by Microsoft
+
+For background on the Secure Boot certificate renewal program, see [aka.ms/getSecureBoot](https://aka.ms/getSecureBoot).
 
 ## Background
 
@@ -18,7 +19,7 @@ identity as reported by the device's SMBIOS tables.
 
 ### What makes a bucket "high confidence"?
 
-Microsoft relies on Windows Required Diagnostic Data to inform whether Secure Boot key updates are successfully applied, or whether the firmware and/or hardware, rejects the updates. When a statistically significant decision has been reached, the bucket is allow listed in this list and the LCU, and delivered to systems via Windows servicing. 
+Microsoft relies on Windows Required Diagnostic Data to inform whether Secure Boot key updates are successfully applied, or whether the firmware and/or hardware rejects the updates. When a statistically significant decision has been reached, the bucket is allow listed in this list and the LCU, and delivered to systems via Windows servicing. 
 
 ### How were these buckets derived?
 
