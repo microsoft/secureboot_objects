@@ -8,8 +8,8 @@
 .NOTES
     File Name  : Make2023BootableMedia.ps1
     Author     : Microsoft Corporation
-    Version    : 1.3
-    Date       : 2025-11-07
+    Version    : 1.4
+    Date       : 2026-03-13
 
 .LICENSE
     Licensed under the BSD License. See License.txt in the project root for full license information.
@@ -79,6 +79,56 @@ function Show-ADK-Req {
     Write-Host "The Windows ADK must be installed on the system if trying to create ISO media. Available at http://aka.ms/adk" -ForegroundColor Red
     Write-Host "After install, open an admin-elevated 'Deploy and Imaging Tools Environment' command prompt provided with the ADK." -ForegroundColor Red
     Write-Host "Then run PowerShell from this command prompt and you should be good to go.`r`n" -ForegroundColor Red
+}
+
+function Download-Oscdimg {
+    <#
+    .SYNOPSIS
+        Downloads oscdimg.exe from the Microsoft public symbol server for the current architecture.
+    .OUTPUTS
+        The file path to the downloaded oscdimg.exe, or $null on failure.
+    #>
+
+    $archUrls = @{
+        "AMD64" = "https://msdl.microsoft.com/download/symbols/oscdimg.exe/9F01AFB765000/oscdimg.exe"
+        "ARM64" = "https://msdl.microsoft.com/download/symbols/oscdimg.exe/2267BF2C66000/oscdimg.exe"
+        "x86"   = "https://msdl.microsoft.com/download/symbols/oscdimg.exe/CFBCC93A60000/oscdimg.exe"
+    }
+
+    $arch = $env:PROCESSOR_ARCHITECTURE
+    if (-not $archUrls.ContainsKey($arch)) {
+        Write-Host "Unsupported architecture [$arch] for oscdimg download." -ForegroundColor Red
+        return $null
+    }
+
+    $url = $archUrls[$arch]
+    $destPath = Join-Path -Path $env:TEMP -ChildPath "oscdimg.exe"
+
+    Write-Host "Downloading oscdimg.exe for [$arch] from Microsoft symbol server..." -ForegroundColor Blue
+    Write-Dbg-Host "Download URL: $url"
+    Write-Dbg-Host "Destination: $destPath"
+
+    try {
+        Invoke-WebRequest -Uri $url -OutFile $destPath -UseBasicParsing -ErrorAction Stop
+    } catch {
+        Write-Host "Failed to download oscdimg.exe: $($_.Exception.Message)" -ForegroundColor Red
+        return $null
+    }
+
+    if (-not (Test-Path $destPath)) {
+        Write-Host "Download appeared to succeed but file not found at [$destPath]." -ForegroundColor Red
+        return $null
+    }
+
+    $fileSize = (Get-Item $destPath).Length
+    if ($fileSize -lt 1024) {
+        Write-Host "Downloaded file is unexpectedly small ($fileSize bytes). It may be corrupt." -ForegroundColor Red
+        Remove-Item -Path $destPath -Force -ErrorAction SilentlyContinue
+        return $null
+    }
+
+    Write-Host "Successfully downloaded oscdimg.exe ($fileSize bytes) to [$destPath]" -ForegroundColor Green
+    return $destPath
 }
 
 function Debug-Pause {
@@ -175,8 +225,31 @@ function Validate-Requirements {
             # See if oscdimg.exe exists in the current working directory
             $executablePath = Join-Path -Path $PWD.Path -ChildPath "oscdimg.exe"
             if (-not (Test-Path -Path $executablePath)) {
-                Write-Host "`r`nRequired support tools not found!" -ForegroundColor Red
                 Write-Dbg-Host "[oscdimg.exe] not found in [$PWD] or in the system PATH!"
+
+                # Check if oscdimg.exe was previously downloaded to the temp directory
+                $tempOscdimg = Join-Path -Path $env:TEMP -ChildPath "oscdimg.exe"
+                if (Test-Path -Path $tempOscdimg) {
+                    Write-Dbg-Host "Found previously downloaded [oscdimg.exe] in [$tempOscdimg]"
+                    Write-Host "Using previously downloaded oscdimg.exe from [$tempOscdimg]" -ForegroundColor Green
+                    $global:oscdimg_exe = $tempOscdimg
+                    return $true
+                }
+
+                # Offer to download oscdimg.exe from the Microsoft public symbol server
+                Write-Host "`r`noscdimg.exe is required for ISO media creation and was not found on this system." -ForegroundColor Yellow
+                Write-Host "It can be downloaded directly from the Microsoft public symbol server (~450 KB)." -ForegroundColor Yellow
+                Write-Host "Alternatively, it is included with an install of the full Windows ADK (http://aka.ms/adk).`r`n" -ForegroundColor Yellow
+                $response = Read-Host "Download oscdimg.exe from Microsoft? (Y/N)"
+                if ($response -match '^[Yy]') {
+                    $downloadedPath = Download-Oscdimg
+                    if ($null -ne $downloadedPath) {
+                        $global:oscdimg_exe = $downloadedPath
+                        return $true
+                    }
+                    Write-Host "Download failed. Please install the Windows ADK instead." -ForegroundColor Red
+                }
+
                 Show-ADK-Req
                 return $false
             }
@@ -367,7 +440,7 @@ function Initialize-StagingDirectory {
 
         $global:Staging_Directory_Path = $tmpPath
 
-        $driveLetter = $global:Staging_Directory_Path.Substring(0, 1)
+        $driveLetter = (Split-Path -Qualifier $global:Staging_Directory_Path).TrimEnd(':')
         try {
             $fs = (Get-Volume -DriveLetter $driveLetter -ErrorAction Stop).FileSystem
         } catch {
@@ -375,9 +448,10 @@ function Initialize-StagingDirectory {
             return $false
         }
 
-        # Make sure the staging directory is on an NTFS or ReFS formatted file system. This is required for the WIM mounting process.
-        if ($fs -ne "NTFS" -and $fs -ne "ReFS") {
-            Write-Host "`r`nStagingDir [$global:Staging_Directory_Path] must target an NTFS or ReFS formatted file system.`r`n" -ForegroundColor Red
+        # Make sure the staging directory is on an NTFS formatted file system. This is required for WIM mounting
+        # which uses reparse points not fully supported on ReFS or other file systems.
+        if ($fs -ne "NTFS") {
+            Write-Host "`r`nStagingDir [$global:Staging_Directory_Path] must target an NTFS formatted file system (required for WIM mounting).`r`n" -ForegroundColor Red
 
             if ($global:StagingDir_Created -eq $true) {
                 Write-Dbg-Host "Removing staging directory [$global:Staging_Directory_Path]"
@@ -473,6 +547,17 @@ function Validate-Parameters {
                 Write-Dbg-Host "Invalid ISOPath [$ISOPath]"
                 return $false
             }
+
+            # Normalize ISOPath to an absolute path
+            try {
+                $script:ISOPath = ConvertTo-AbsolutePath -Path $ISOPath
+                Write-Dbg-Host "ISOPath: [$ISOPath] -> [$script:ISOPath]"
+                $ISOPath = $script:ISOPath
+            } catch {
+                Write-Host "Invalid -ISOPath '$ISOPath': $($_.Exception.Message)" -ForegroundColor Red
+                return $false
+            }
+
             # if $ISOPath exists, ask the user if they want to overwrite it, otherwise abort
             if (Test-Path -Path $ISOPath) {
                 Write-Host "ISO [$ISOPath] already exists. Do you want to overwrite it? (Y/N)" -ForegroundColor Yellow
@@ -570,8 +655,7 @@ function Validate-Parameters {
                 return $false
             }
 
-            $driveLetter = $tmpPath.Substring(0,1)
-            $fs = (Get-Volume -DriveLetter $driveLetter).FileSystem
+            $driveLetter = (Split-Path -Qualifier $tmpPath).TrimEnd(':')
             try {
                 $fs = (Get-Volume -DriveLetter $driveLetter -ErrorAction Stop).FileSystem
             } catch {
@@ -579,9 +663,10 @@ function Validate-Parameters {
                 return $false
             }
 
-            # Make sure the target drive is NTFS or ReFS. This is required for the WIM mount operations.
-            if ($fs -ne "NTFS" -and $fs -ne "ReFS") {
-                Write-Host "`r`n-NewMediaPath [$tmpPath] must target an NTFS or ReFS file system.`r`n" -ForegroundColor Red
+            # Make sure the target drive is NTFS. This is required for WIM mounting which uses
+            # reparse points not fully supported on ReFS or other file systems.
+            if ($fs -ne "NTFS") {
+                Write-Host "`r`n-NewMediaPath [$tmpPath] must target an NTFS formatted file system (required for WIM mounting).`r`n" -ForegroundColor Red
                 return $false
             }
 
@@ -607,6 +692,10 @@ function ConvertTo-AbsolutePath {
         [bool] $AllowUNC = $false
         )
 
+    if ([string]::IsNullOrWhiteSpace($Path)) {
+        throw "Path cannot be null or empty"
+    }
+
     # Reject UNC paths
     if (-not $AllowUNC) {
         if ($Path -match "^\\\\") {
@@ -614,10 +703,7 @@ function ConvertTo-AbsolutePath {
         }
     }
 
-    $tmpPath = $Path
-    if ($Path[-1] -eq "\") {
-        $tmpPath = $Path.Substring(0, $Path.Length - 1)
-    }
+    $tmpPath = $Path.TrimEnd('\')
 
     # If a root drive path (C:\), return as-is
     if ($tmpPath -match "^[a-zA-Z]:") {
@@ -735,7 +821,7 @@ function Copy-2023BootBins {
         $mountedImage = Mount-WindowsImage -ImagePath $bootWimPath -Index 1 -Path $bootWimMount -ReadOnly -ErrorAction stop | Out-Null
         Write-Dbg-Host "Mounted [$bootWimPath] --> [$bootWimMount]"
     } catch {
-        Write-Host "Failed to mount boot.wim of the source media!`r`nMake sure -StagingDir and -NewMediaPath are targetting an NTFS or ReFS based filesystem." -ForegroundColor Red
+        Write-Host "Failed to mount boot.wim of the source media!`r`nMake sure -StagingDir is targeting an NTFS formatted file system (ReFS is not supported for WIM mounting)." -ForegroundColor Red
         Write-Host $_.Exception.Message -ForegroundColor Red
         return $false
     }
@@ -798,6 +884,18 @@ function Copy-2023BootBins {
         Write-Dbg-Host "Removing [$global:Temp_Media_To_Update_Path\efi\microsoft\boot\fonts_ex]"
         Remove-Item -Path $global:Temp_Media_To_Update_Path"\efi\microsoft\boot\fonts_ex" -Recurse -Force -ErrorAction stop | Out-Null
 
+        # Copy boot.stl from the mounted boot.wim to the staged media if not already present
+        $bootStlSource = $bootWimMount + "\Windows\Boot\EFI\boot.stl"
+        $bootStlDest = $global:Temp_Media_To_Update_Path + "\EFI\Microsoft\Boot\boot.stl"
+        if (-not (Test-Path -Path $bootStlSource)) {
+            Write-Dbg-Host "[boot.stl] not found in mounted boot.wim at [$bootStlSource]. Skipping."
+        } elseif (Test-Path -Path $bootStlDest) {
+            Write-Dbg-Host "[boot.stl] already exists at [$bootStlDest]. Preserving existing file."
+        } else {
+            Write-Dbg-Host "Copying [$bootStlSource] to [$bootStlDest]"
+            Copy-Item -Path $bootStlSource -Destination $bootStlDest -Force -ErrorAction stop | Out-Null
+        }
+
     } catch {
         Write-Host "$_" -ForegroundColor Red
         return $false
@@ -843,8 +941,8 @@ function Create-ISOMedia {
     Write-Dbg-Host "Running [$global:oscdimg_exe $runCommand]"
     try {
 
-        # strip the file name from $ISOPath
-        $isoDirPath = $ISOPath.Substring(0, $ISOPath.LastIndexOf("\"))
+        # Extract the directory portion of $ISOPath
+        $isoDirPath = Split-Path -Parent $ISOPath
 
         # Make sure ISO path is valid or the call to oscdimg.exe will fail
         if (-not (Test-Path $isoDirPath)) {
@@ -941,7 +1039,7 @@ $global:Dbg_Pause = $false
 $global:Dbg_Output = $DebugOn
 
 try {
-    Write-Host "`r`n`r`nMicrosoft 'Windows UEFI CA 2023' Media Update Script - Version 1.3`r`n" -ForegroundColor DarkYellow
+    Write-Host "`r`n`r`nMicrosoft 'Windows UEFI CA 2023' Media Update Script - Version 1.4`r`n" -ForegroundColor DarkYellow
 
     # First validate that the required tools/environment exist
     $result = Validate-Parameters -TargetType $TargetType -ISOPath $ISOPath -USBDrive $USBDrive -NewMediaPath $NewMediaPath -FileSystem $FileSystem -StagingDir $StagingDir
