@@ -76,7 +76,7 @@ function Show-Usage {
 }
 
 function Show-ADK-Req {
-    Write-Host "The Windows ADK must be installed on the system if trying to create ISO media. Available at http://aka.ms/adk" -ForegroundColor Red
+    Write-Host "The Windows ADK must be installed on the system if trying to create ISO media. Available at https://aka.ms/adk" -ForegroundColor Red
     Write-Host "After install, open an admin-elevated 'Deploy and Imaging Tools Environment' command prompt provided with the ADK." -ForegroundColor Red
     Write-Host "Then run PowerShell from this command prompt and you should be good to go.`r`n" -ForegroundColor Red
 }
@@ -84,7 +84,8 @@ function Show-ADK-Req {
 function Download-Oscdimg {
     <#
     .SYNOPSIS
-        Downloads oscdimg.exe from the Microsoft public symbol server for the current architecture.
+        Downloads oscdimg.exe from the Microsoft public symbol server for the current architecture. These are not signed so 
+        they are validated against known SHA256 hashes before being used. 
     .OUTPUTS
         The file path to the downloaded oscdimg.exe, or $null on failure.
     #>
@@ -102,31 +103,42 @@ function Download-Oscdimg {
     }
 
     $url = $archUrls[$arch]
+    $expectedHash = $global:oscdimg_known_hashes[$arch]
     $destPath = Join-Path -Path $env:TEMP -ChildPath "oscdimg.exe"
 
     Write-Host "Downloading oscdimg.exe for [$arch] from Microsoft symbol server..." -ForegroundColor Blue
     Write-Dbg-Host "Download URL: $url"
     Write-Dbg-Host "Destination: $destPath"
 
+    $tmpDownloadPath = "$destPath.download"
     try {
-        Invoke-WebRequest -Uri $url -OutFile $destPath -UseBasicParsing -ErrorAction Stop
+        Invoke-WebRequest -Uri $url -OutFile $tmpDownloadPath -UseBasicParsing -ErrorAction Stop
     } catch {
         Write-Host "Failed to download oscdimg.exe: $($_.Exception.Message)" -ForegroundColor Red
+        Remove-Item -Path $tmpDownloadPath -Force -ErrorAction SilentlyContinue
         return $null
     }
 
-    if (-not (Test-Path $destPath)) {
-        Write-Host "Download appeared to succeed but file not found at [$destPath]." -ForegroundColor Red
+    if (-not (Test-Path $tmpDownloadPath)) {
+        Write-Host "Download appeared to succeed but file not found at [$tmpDownloadPath]." -ForegroundColor Red
         return $null
     }
+
+    # Validate downloaded file against known SHA256 hash
+    $actualHash = (Get-FileHash -Path $tmpDownloadPath -Algorithm SHA256).Hash
+    if ($actualHash -ne $expectedHash) {
+        Write-Host "Downloaded oscdimg.exe failed integrity check." -ForegroundColor Red
+        Write-Host "Expected SHA256: $expectedHash" -ForegroundColor Red
+        Write-Host "Actual SHA256:   $actualHash" -ForegroundColor Red
+        Remove-Item -Path $tmpDownloadPath -Force -ErrorAction SilentlyContinue
+        return $null
+    }
+    Write-Dbg-Host "SHA256 hash verified: $actualHash"
+
+    # Move validated file into place
+    Move-Item -Path $tmpDownloadPath -Destination $destPath -Force
 
     $fileSize = (Get-Item $destPath).Length
-    if ($fileSize -lt 1024) {
-        Write-Host "Downloaded file is unexpectedly small ($fileSize bytes). It may be corrupt." -ForegroundColor Red
-        Remove-Item -Path $destPath -Force -ErrorAction SilentlyContinue
-        return $null
-    }
-
     Write-Host "Successfully downloaded oscdimg.exe ($fileSize bytes) to [$destPath]" -ForegroundColor Green
     return $destPath
 }
@@ -230,16 +242,24 @@ function Validate-Requirements {
                 # Check if oscdimg.exe was previously downloaded to the temp directory
                 $tempOscdimg = Join-Path -Path $env:TEMP -ChildPath "oscdimg.exe"
                 if (Test-Path -Path $tempOscdimg) {
-                    Write-Dbg-Host "Found previously downloaded [oscdimg.exe] in [$tempOscdimg]"
-                    Write-Host "Using previously downloaded oscdimg.exe from [$tempOscdimg]" -ForegroundColor Green
-                    $global:oscdimg_exe = $tempOscdimg
-                    return $true
+                    # Validate hash before trusting a cached copy from user-writable temp dir
+                    $expectedHash = $global:oscdimg_known_hashes[$env:PROCESSOR_ARCHITECTURE]
+                    $actualHash = (Get-FileHash -Path $tempOscdimg -Algorithm SHA256).Hash
+                    if ($expectedHash -and $actualHash -eq $expectedHash) {
+                        Write-Dbg-Host "Found previously downloaded [oscdimg.exe] in [$tempOscdimg] with valid hash"
+                        Write-Host "Using previously downloaded oscdimg.exe from [$tempOscdimg]" -ForegroundColor Green
+                        $global:oscdimg_exe = $tempOscdimg
+                        return $true
+                    } else {
+                        Write-Dbg-Host "Cached [oscdimg.exe] at [$tempOscdimg] failed integrity check. Removing."
+                        Remove-Item -Path $tempOscdimg -Force -ErrorAction SilentlyContinue
+                    }
                 }
 
                 # Offer to download oscdimg.exe from the Microsoft public symbol server
                 Write-Host "`r`noscdimg.exe is required for ISO media creation and was not found on this system." -ForegroundColor Yellow
                 Write-Host "It can be downloaded directly from the Microsoft public symbol server (~450 KB)." -ForegroundColor Yellow
-                Write-Host "Alternatively, it is included with an install of the full Windows ADK (http://aka.ms/adk).`r`n" -ForegroundColor Yellow
+                Write-Host "Alternatively, it is included with an install of the full Windows ADK (https://aka.ms/adk).`r`n" -ForegroundColor Yellow
                 $response = Read-Host "Download oscdimg.exe from Microsoft? (Y/N)"
                 if ($response -match '^[Yy]') {
                     $downloadedPath = Download-Oscdimg
@@ -1035,6 +1055,11 @@ $global:WIM_Mount_Path = $null
 $global:ISO_Mount_Path = $null
 $global:ISO_Label = $null
 $global:oscdimg_exe = $null
+$global:oscdimg_known_hashes = @{
+    "AMD64" = "ABCD07318EBD8CDBE274B46C9DE78820DCA9709D558CDBC1F5D1730924264D07"
+    "ARM64" = "CDAE3649F6A6DE45F50A0B5FB5E2BBC098503B9EEFB1AE6A398FC955B434F579"
+    "x86"   = "85AC2DDD96239D037560E5336727F9A8BE2B902734B9DD88264DD7DB5612EFB9"
+}
 $global:Dbg_Pause = $false
 $global:Dbg_Output = $DebugOn
 
