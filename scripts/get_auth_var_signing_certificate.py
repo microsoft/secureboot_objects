@@ -171,6 +171,7 @@ def process_directory(directory_path: str, output_json: str) -> None:
     bin_files = list(directory.rglob("*.bin"))
     logging.info(f"Found {len(bin_files)} .bin files to process")
 
+    bin_files.sort()
     for bin_file in bin_files:
         try:
             certificate, sha1_thumb, _ = process_auth_file(str(bin_file))
