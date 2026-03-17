@@ -37,7 +37,7 @@ jobs:
     - name: Generate Token
       if: github.event_name == 'release'
       id: app-token
-      uses: actions/create-github-app-token@v2
+      uses: actions/create-github-app-token@v3
       with:
         app-id: ${{ vars.MU_ACCESS_APP_ID }}
         private-key: ${{ secrets.MU_ACCESS_APP_PRIVATE_KEY }}
