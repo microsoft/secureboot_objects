@@ -231,6 +231,14 @@
             "issued_by": "CN=www.biostar.com.tw,OU=BIOS,O=BIOSTAR Microtech International Corp,L=TAIPEI,ST=TAIWAN,C=TW"
         }
     },
+    "06abf5601931233f0b12425e95d466917bf745f2": {
+        "KEKUpdate": "CVTE/KEKUpdate_CVTE_PK06abf5.bin",
+        "Certificate": {
+            "serial_number": "59fa608e8671801578420362977aa310012b7c01",
+            "issued_to": "CN=CVTE_PK,OU=SW,O=YK,ST=JS,C=CN",
+            "issued_by": "CN=CVTE_PK,OU=SW,O=YK,ST=JS,C=CN"
+        }
+    },
     "1ce8e5e9f0674a7e2b6967bcf9dc84116b5b7a69": {
         "KEKUpdate": "Casper Bilgisayar Sistemleri/KEKUpdate_Casper_Bilgisayar_Sistemleri_PK1.bin",
         "Certificate": {
