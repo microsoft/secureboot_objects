@@ -1,4 +1,60 @@
 {
+    "be4a1ac7ff36c0faf0c643274a80a5e78d0b2551": {
+        "KEKUpdate": "Aava Mobile Oy/KEKUpdate_Aava_Mobile_Oy_PK1.bin",
+        "Certificate": {
+            "serial_number": "82186208b7486373",
+            "issued_to": "CN=UEFI PK Aava test",
+            "issued_by": "CN=UEFI PK Aava test"
+        }
+    },
+    "f2b275e88a170fea01364af397baf44b7f6af804": {
+        "KEKUpdate": "Aava Mobile Oy/KEKUpdate_Aava_Mobile_Oy_PK3.bin",
+        "Certificate": {
+            "serial_number": "dd68b91d4b23f3c1",
+            "issued_to": "CN=uefi_pk",
+            "issued_by": "CN=uefi_pk"
+        }
+    },
+    "97b12a139d3858e70de4dc785d4c24767914af04": {
+        "KEKUpdate": "Acer/KEKUpdate_Acer_PK1.bin",
+        "Certificate": {
+            "serial_number": "5c43f0519fbeb3ae47d3d46e347411d4",
+            "issued_to": "CN=Acer Platform Key,O=Acer,L=Taipei,ST=TW,C=Taiwan",
+            "issued_by": "CN=Acer Root CA,O=Acer,L=Taipei,ST=TW,C=Taiwan"
+        }
+    },
+    "6cd7005bdf38b270649ae6ad19ee46c7b040f8c2": {
+        "KEKUpdate": "Acer/KEKUpdate_Acer_PK6CD7005B.bin",
+        "Certificate": {
+            "serial_number": "fad95b59cd8a3bd5",
+            "issued_to": "CN=Acer India,OU=HEAD OFFICE,O=Acer India Private Limited,L=BANGALORE,ST=KARNATAKA,C=IN",
+            "issued_by": "CN=Acer India,OU=HEAD OFFICE,O=Acer India Private Limited,L=BANGALORE,ST=KARNATAKA,C=IN"
+        }
+    },
+    "9dbdabc291fb598cb61ac0826b3273b37648b9f4": {
+        "KEKUpdate": "Acer/KEKUpdate_Acer_PK9DBDABC2.bin",
+        "Certificate": {
+            "serial_number": "b023c7b2fa4763cb",
+            "issued_to": "OU=RD,O=BIOSTAR Microtech International Corp,L=TAIPEI,ST=TAIWAN,C=TW",
+            "issued_by": "OU=RD,O=BIOSTAR Microtech International Corp,L=TAIPEI,ST=TAIWAN,C=TW"
+        }
+    },
+    "2f005cebcf48ecc720406c24350113298328f044": {
+        "KEKUpdate": "Adlink/KEKUpdate_Adlink_PK1.bin",
+        "Certificate": {
+            "serial_number": "8fb14a09c371be7a",
+            "issued_to": "CN=Dell secure boot platform key 2022,O=Dell Technologies Inc.,L=Portland,ST=California,C=US",
+            "issued_by": "CN=Dell secure boot platform key 2022,O=Dell Technologies Inc.,L=Portland,ST=California,C=US"
+        }
+    },
+    "5ecf2d6a6727b27ab195498d9c10d8ae88d3d606": {
+        "KEKUpdate": "Adlink/KEKUpdate_Adlink_PK5ECF2D6A.bin",
+        "Certificate": {
+            "serial_number": "86a97d2c010f0059",
+            "issued_to": "CN=Adlink Platform Key,O=Adlink Technology Inc.,L=Taipei,ST=Taiwan,C=TW",
+            "issued_by": "CN=Adlink Platform Key,O=Adlink Technology Inc.,L=Taipei,ST=Taiwan,C=TW"
+        }
+    },
     "9a3056b5260f628645b4d9ac61aebd8060305c3e": {
         "KEKUpdate": "AMI/KEKUpdate_AMI_PK1.bin",
         "Certificate": {
@@ -159,62 +215,6 @@
             "issued_by": "CN=HQ NBD1 PlatformKey Certificate"
         }
     },
-    "be4a1ac7ff36c0faf0c643274a80a5e78d0b2551": {
-        "KEKUpdate": "Aava Mobile Oy/KEKUpdate_Aava_Mobile_Oy_PK1.bin",
-        "Certificate": {
-            "serial_number": "82186208b7486373",
-            "issued_to": "CN=UEFI PK Aava test",
-            "issued_by": "CN=UEFI PK Aava test"
-        }
-    },
-    "f2b275e88a170fea01364af397baf44b7f6af804": {
-        "KEKUpdate": "Aava Mobile Oy/KEKUpdate_Aava_Mobile_Oy_PK3.bin",
-        "Certificate": {
-            "serial_number": "dd68b91d4b23f3c1",
-            "issued_to": "CN=uefi_pk",
-            "issued_by": "CN=uefi_pk"
-        }
-    },
-    "97b12a139d3858e70de4dc785d4c24767914af04": {
-        "KEKUpdate": "Acer/KEKUpdate_Acer_PK1.bin",
-        "Certificate": {
-            "serial_number": "5c43f0519fbeb3ae47d3d46e347411d4",
-            "issued_to": "CN=Acer Platform Key,O=Acer,L=Taipei,ST=TW,C=Taiwan",
-            "issued_by": "CN=Acer Root CA,O=Acer,L=Taipei,ST=TW,C=Taiwan"
-        }
-    },
-    "6cd7005bdf38b270649ae6ad19ee46c7b040f8c2": {
-        "KEKUpdate": "Acer/KEKUpdate_Acer_PK6CD7005B.bin",
-        "Certificate": {
-            "serial_number": "fad95b59cd8a3bd5",
-            "issued_to": "CN=Acer India,OU=HEAD OFFICE,O=Acer India Private Limited,L=BANGALORE,ST=KARNATAKA,C=IN",
-            "issued_by": "CN=Acer India,OU=HEAD OFFICE,O=Acer India Private Limited,L=BANGALORE,ST=KARNATAKA,C=IN"
-        }
-    },
-    "9dbdabc291fb598cb61ac0826b3273b37648b9f4": {
-        "KEKUpdate": "Acer/KEKUpdate_Acer_PK9DBDABC2.bin",
-        "Certificate": {
-            "serial_number": "b023c7b2fa4763cb",
-            "issued_to": "OU=RD,O=BIOSTAR Microtech International Corp,L=TAIPEI,ST=TAIWAN,C=TW",
-            "issued_by": "OU=RD,O=BIOSTAR Microtech International Corp,L=TAIPEI,ST=TAIWAN,C=TW"
-        }
-    },
-    "2f005cebcf48ecc720406c24350113298328f044": {
-        "KEKUpdate": "Adlink/KEKUpdate_Adlink_PK1.bin",
-        "Certificate": {
-            "serial_number": "8fb14a09c371be7a",
-            "issued_to": "CN=Dell secure boot platform key 2022,O=Dell Technologies Inc.,L=Portland,ST=California,C=US",
-            "issued_by": "CN=Dell secure boot platform key 2022,O=Dell Technologies Inc.,L=Portland,ST=California,C=US"
-        }
-    },
-    "5ecf2d6a6727b27ab195498d9c10d8ae88d3d606": {
-        "KEKUpdate": "Adlink/KEKUpdate_Adlink_PK5ECF2D6A.bin",
-        "Certificate": {
-            "serial_number": "86a97d2c010f0059",
-            "issued_to": "CN=Adlink Platform Key,O=Adlink Technology Inc.,L=Taipei,ST=Taiwan,C=TW",
-            "issued_by": "CN=Adlink Platform Key,O=Adlink Technology Inc.,L=Taipei,ST=Taiwan,C=TW"
-        }
-    },
     "f77be268ff7cd9691721db46df7405b93fc4ee89": {
         "KEKUpdate": "Attis/KEKUpdate_Attis_PK1.bin",
         "Certificate": {
@@ -285,6 +285,14 @@
             "serial_number": "8ff5af92a3e81cbf4c9238e5c946b8ef",
             "issued_to": "CN=BYD Certificate PK",
             "issued_by": "CN=BYD Certificate PK"
+        }
+    },
+    "06abf5601931233f0b12425e95d466917bf745f2": {
+        "KEKUpdate": "CVTE/KEKUpdate_CVTE_PK06abf5.bin",
+        "Certificate": {
+            "serial_number": "59fa608e8671801578420362977aa310012b7c01",
+            "issued_to": "CN=CVTE_PK,OU=SW,O=YK,ST=JS,C=CN",
+            "issued_by": "CN=CVTE_PK,OU=SW,O=YK,ST=JS,C=CN"
         }
     },
     "38a346b84c0e230ca4f235e7355b872460770264": {
@@ -559,38 +567,6 @@
             "issued_by": "CN=GIGABYTE"
         }
     },
-    "d52ac7db954c167a386e1aa955249a4d9bdadedd": {
-        "KEKUpdate": "HP/KEKUpdate_HP_PK1.bin",
-        "Certificate": {
-            "serial_number": "5fb660d4c2fb166b6576b7257a4c37ab",
-            "issued_to": "O=HP Inc.,C=US,OU=CODE-SIGN,CN=HP UEFI Secure Boot PK 2017",
-            "issued_by": "CN=HP Inc. PK 2016 CA,O=HP Inc.,C=US"
-        }
-    },
-    "ef40e88b7f2cc718a087051db5d5d4c26043c5aa": {
-        "KEKUpdate": "HP/KEKUpdate_HP_PK5.bin",
-        "Certificate": {
-            "serial_number": "7758a5f8cb1dcfd32c6a7f8f03816b04",
-            "issued_to": "CN=HP UEFI Secure Boot 2013 PK Key,OU=Long Lived CodeSigning Certificate,O=Hewlett-Packard Company",
-            "issued_by": "CN=Hewlett-Packard Printing Device Infrastructure CA,O=Hewlett-Packard Company,C=US"
-        }
-    },
-    "bba4b07810638f77e1a86200e36ec1619df14e81": {
-        "KEKUpdate": "HP/KEKUpdate_HP_PK3.bin",
-        "Certificate": {
-            "serial_number": "1b6aef498cfb7f90b681321ae89ec2ef",
-            "issued_to": "CN=Hewlett-Packard UEFI Secure Boot Platform Key,OU=Long Lived CodeSigning Certificate,O=Hewlett-Packard Company",
-            "issued_by": "CN=Hewlett-Packard Printing Device Infrastructure CA,O=Hewlett-Packard Company,C=US"
-        }
-    },
-    "30c1554337e11377a52bf3b111bfd42ca1a5c4cd": {
-        "KEKUpdate": "HP/KEKUpdate_HP_PK4.bin",
-        "Certificate": {
-            "serial_number": "77378497e4baff8b4aabb90ca4003af8",
-            "issued_to": "O=Hewlett Packard Enterprise Company,C=US,OU=CODE-SIGN,CN=HPE UEFI Secure Boot 2016 PK Key",
-            "issued_by": "CN=Hewlett Packard Enterprise Private Code Signing Intermediate CA,O=Hewlett Packard Enterprise Company,C=US"
-        }
-    },
     "fbf45fd17e6fa21ab21ac1fd7b760fee70f78002": {
         "KEKUpdate": "Honor/KEKUpdate_Honor_PK1.bin",
         "Certificate": {
@@ -669,6 +645,38 @@
             "serial_number": "1c4e21dbbf03c49d4f9c1dd566bc1a2d",
             "issued_to": "CN=GalileoG platform key：",
             "issued_by": "CN=GalileoG platform key："
+        }
+    },
+    "d52ac7db954c167a386e1aa955249a4d9bdadedd": {
+        "KEKUpdate": "HP/KEKUpdate_HP_PK1.bin",
+        "Certificate": {
+            "serial_number": "5fb660d4c2fb166b6576b7257a4c37ab",
+            "issued_to": "O=HP Inc.,C=US,OU=CODE-SIGN,CN=HP UEFI Secure Boot PK 2017",
+            "issued_by": "CN=HP Inc. PK 2016 CA,O=HP Inc.,C=US"
+        }
+    },
+    "ef40e88b7f2cc718a087051db5d5d4c26043c5aa": {
+        "KEKUpdate": "HP/KEKUpdate_HP_PK5.bin",
+        "Certificate": {
+            "serial_number": "7758a5f8cb1dcfd32c6a7f8f03816b04",
+            "issued_to": "CN=HP UEFI Secure Boot 2013 PK Key,OU=Long Lived CodeSigning Certificate,O=Hewlett-Packard Company",
+            "issued_by": "CN=Hewlett-Packard Printing Device Infrastructure CA,O=Hewlett-Packard Company,C=US"
+        }
+    },
+    "bba4b07810638f77e1a86200e36ec1619df14e81": {
+        "KEKUpdate": "HP/KEKUpdate_HP_PK3.bin",
+        "Certificate": {
+            "serial_number": "1b6aef498cfb7f90b681321ae89ec2ef",
+            "issued_to": "CN=Hewlett-Packard UEFI Secure Boot Platform Key,OU=Long Lived CodeSigning Certificate,O=Hewlett-Packard Company",
+            "issued_by": "CN=Hewlett-Packard Printing Device Infrastructure CA,O=Hewlett-Packard Company,C=US"
+        }
+    },
+    "30c1554337e11377a52bf3b111bfd42ca1a5c4cd": {
+        "KEKUpdate": "HP/KEKUpdate_HP_PK4.bin",
+        "Certificate": {
+            "serial_number": "77378497e4baff8b4aabb90ca4003af8",
+            "issued_to": "O=Hewlett Packard Enterprise Company,C=US,OU=CODE-SIGN,CN=HPE UEFI Secure Boot 2016 PK Key",
+            "issued_by": "CN=Hewlett Packard Enterprise Private Code Signing Intermediate CA,O=Hewlett Packard Enterprise Company,C=US"
         }
     },
     "04c4adbcde6eebd0e940cf18f5546c9eb403a523": {
@@ -797,30 +805,6 @@
             "serial_number": "63809e947df075aa97378c0655c74ceaf982ee24",
             "issued_to": "CN=Kontron EPC-Boards PK,OU=EPC-Boards,O=Kontron Europe GmbH,C=DE",
             "issued_by": "CN=Kontron EPC-Boards PK,OU=EPC-Boards,O=Kontron Europe GmbH,C=DE"
-        }
-    },
-    "940708c942905ed073ac47f3bd67397dd6560532": {
-        "KEKUpdate": "LG/KEKUpdate_LG_PK1.bin",
-        "Certificate": {
-            "serial_number": "67eb6476fbb5069b42ca733f9dcd6aae",
-            "issued_to": "CN=LG Electronics inc.",
-            "issued_by": "CN=LG Electronics inc."
-        }
-    },
-    "f44a2967222909b8d97b731c83b762271919eee5": {
-        "KEKUpdate": "LG/KEKUpdate_LG_PK2.bin",
-        "Certificate": {
-            "serial_number": "4bad88265909f29eb7827157954a75a5",
-            "issued_to": "CN=LG Electronics Inc.,O=LG Electronics Inc.,L=경기도 평택시,ST=경기도 평택시,C=KR",
-            "issued_by": "CN=VeriSign Class 3 Code Signing 2010 CA,OU=Terms of use at https://www.verisign.com/rpa (c)10,OU=VeriSign Trust Network,O=VeriSign\\, Inc.,C=US"
-        }
-    },
-    "bdeab99f8bf89c3d5b4f98433503e29bc7fcb416": {
-        "KEKUpdate": "LG/KEKUpdate_LG_PK3.bin",
-        "Certificate": {
-            "serial_number": "6899b994460771561324368e930e04e99e053be1",
-            "issued_to": "CN=LGE Linux PK Certificate",
-            "issued_by": "CN=LGE Linux PK Certificate"
         }
     },
     "46c73daf3047d1ece967d093edf72ac5ffc86586": {
@@ -3199,6 +3183,30 @@
             "issued_by": "CN=LENOVO"
         }
     },
+    "940708c942905ed073ac47f3bd67397dd6560532": {
+        "KEKUpdate": "LG/KEKUpdate_LG_PK1.bin",
+        "Certificate": {
+            "serial_number": "67eb6476fbb5069b42ca733f9dcd6aae",
+            "issued_to": "CN=LG Electronics inc.",
+            "issued_by": "CN=LG Electronics inc."
+        }
+    },
+    "f44a2967222909b8d97b731c83b762271919eee5": {
+        "KEKUpdate": "LG/KEKUpdate_LG_PK2.bin",
+        "Certificate": {
+            "serial_number": "4bad88265909f29eb7827157954a75a5",
+            "issued_to": "CN=LG Electronics Inc.,O=LG Electronics Inc.,L=경기도 평택시,ST=경기도 평택시,C=KR",
+            "issued_by": "CN=VeriSign Class 3 Code Signing 2010 CA,OU=Terms of use at https://www.verisign.com/rpa (c)10,OU=VeriSign Trust Network,O=VeriSign\\, Inc.,C=US"
+        }
+    },
+    "bdeab99f8bf89c3d5b4f98433503e29bc7fcb416": {
+        "KEKUpdate": "LG/KEKUpdate_LG_PK3.bin",
+        "Certificate": {
+            "serial_number": "6899b994460771561324368e930e04e99e053be1",
+            "issued_to": "CN=LGE Linux PK Certificate",
+            "issued_by": "CN=LGE Linux PK Certificate"
+        }
+    },
     "ebb51e6221c7b626ba6c39402d7450a1018d12eb": {
         "KEKUpdate": "MSI/KEKUpdate_MSI_PK3.bin",
         "Certificate": {
@@ -3229,22 +3237,6 @@
             "serial_number": "3518b5116a93db914e4643823ce5e9ea",
             "issued_to": "CN=MEDION_AG",
             "issued_by": "CN=MEDION_AG"
-        }
-    },
-    "2ca96734e4a5c4056f527f0016c8c65e1224ad26": {
-        "KEKUpdate": "MSI/KEKUpdate_MSI_PK1.bin",
-        "Certificate": {
-            "serial_number": "8cb17834fb1237a04c72ab6631f4143e",
-            "issued_to": "CN=MSI NB - 2013 PK",
-            "issued_by": "CN=MSI NB - 2013 PK"
-        }
-    },
-    "c82b1878468f40413fa308557b10ed78c683345a": {
-        "KEKUpdate": "MSI/KEKUpdate_MSI_PK2.bin",
-        "Certificate": {
-            "serial_number": "1dcdb29760a12aa0433d0430993c8d84",
-            "issued_to": "CN=MSI NB PK 2022",
-            "issued_by": "CN=MSI NB PK 2022"
         }
     },
     "8058e8cc51749652804bbd6f39aed713d119c64b": {
@@ -3405,6 +3397,22 @@
             "serial_number": "2533b2fb861f1284418a149de0d93621",
             "issued_to": "CN=BYD Certificate 2019",
             "issued_by": "CN=BYD Certificate 2019"
+        }
+    },
+    "2ca96734e4a5c4056f527f0016c8c65e1224ad26": {
+        "KEKUpdate": "MSI/KEKUpdate_MSI_PK1.bin",
+        "Certificate": {
+            "serial_number": "8cb17834fb1237a04c72ab6631f4143e",
+            "issued_to": "CN=MSI NB - 2013 PK",
+            "issued_by": "CN=MSI NB - 2013 PK"
+        }
+    },
+    "c82b1878468f40413fa308557b10ed78c683345a": {
+        "KEKUpdate": "MSI/KEKUpdate_MSI_PK2.bin",
+        "Certificate": {
+            "serial_number": "1dcdb29760a12aa0433d0430993c8d84",
+            "issued_to": "CN=MSI NB PK 2022",
+            "issued_by": "CN=MSI NB PK 2022"
         }
     },
     "710131e366592696d44cf776fc35ea7112925484": {
@@ -3615,6 +3623,14 @@
             "issued_by": "CN=SUPERMICRO PK CA 2018,O=Super Micro Computer Inc.,L=San Jose,ST=CA,C=USA"
         }
     },
+    "029d01cb5887c2e799b15ee9a360af0ec6e72622": {
+        "KEKUpdate": "Techvision/KEKUpdate_Techvision_PK1.bin",
+        "Certificate": {
+            "serial_number": "12a58a7682ed84974304e14f56889975",
+            "issued_to": "CN=Techvision Intelligent Technology Limited",
+            "issued_by": "CN=Techvision Intelligent Technology Limited"
+        }
+    },
     "892e6333fe1f30edeb1c93a16c9e20cc7bfacb3c": {
         "KEKUpdate": "TONGFANG/KEKUpdate_TONGFANG_PK1.bin",
         "Certificate": {
@@ -3645,14 +3661,6 @@
             "serial_number": "24663bc83929aaac28419a3edca63bed893ff3d5",
             "issued_to": "CN=AIStoneGlobal Platform Key 2024",
             "issued_by": "CN=AIStoneGlobal Platform Key 2024"
-        }
-    },
-    "029d01cb5887c2e799b15ee9a360af0ec6e72622": {
-        "KEKUpdate": "Techvision/KEKUpdate_Techvision_PK1.bin",
-        "Certificate": {
-            "serial_number": "12a58a7682ed84974304e14f56889975",
-            "issued_to": "CN=Techvision Intelligent Technology Limited",
-            "issued_by": "CN=Techvision Intelligent Technology Limited"
         }
     },
     "60d059444e045a0795b636aeffac566a2f294ebe": {
