@@ -3663,6 +3663,14 @@
             "issued_by": "CN=AIStoneGlobal Platform Key 2024"
         }
     },
+    "7bc94987ac5636c9249492b6600dd55ab9e7be47": {
+        "KEKUpdate": "TOSHIBA/KEKUpdate_TOSHIBA_PK7bc94987.bin",
+        "Certificate": {
+            "serial_number": "34cdb4902d5001cefea0580cfb7056b4836c6827",
+            "issued_to": "CN=Toshiba Industrial Computer,O=TOSHIBA,ST=Tokyo,C=JP",
+            "issued_by": "CN=Toshiba Industrial Computer,O=TOSHIBA,ST=Tokyo,C=JP"
+        }
+    },
     "029d01cb5887c2e799b15ee9a360af0ec6e72622": {
         "KEKUpdate": "Techvision/KEKUpdate_Techvision_PK1.bin",
         "Certificate": {
