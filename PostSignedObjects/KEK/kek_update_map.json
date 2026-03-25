@@ -3247,6 +3247,14 @@
             "issued_by": "CN=MSI NB PK 2022"
         }
     },
+    "5cff8a49a6516fa15b1f02eeb1b90608cecdecfa": {
+        "KEKUpdate": "MiTAC/KEKUpdate_MiTAC_PK1.bin",
+        "Certificate": {
+            "serial_number": "45b3fbc3fa9f298b4b0dd11e683c1aad",
+            "issued_to": "CN=MiTAC Certificate",
+            "issued_by": "CN=MiTAC Certificate"
+        }
+    },
     "8058e8cc51749652804bbd6f39aed713d119c64b": {
         "KEKUpdate": "Microsoft/KEKUpdate_Microsoft_PK1.bin",
         "Certificate": {
