@@ -3391,6 +3391,14 @@
             "issued_by": "CN=MiTAC Certificate"
         }
     },
+    "10d8609df90643180acb0d4b041332a25717465b": {
+        "KEKUpdate": "MiTAC/KEKUpdate_MiTAC_PK2.bin",
+        "Certificate": {
+            "serial_number": "18bb51d31283e7a248297891ac5feccd",
+            "issued_to": "CN=MiTAC Certificate",
+            "issued_by": "CN=MiTAC Certificate"
+        }
+    },
     "017439b429ac01514cc62311f5d5779341d57c82": {
         "KEKUpdate": "Mouse Computer Co Ltd/KEKUpdate_Mouse_Computer_Co_Ltd_PK1.bin",
         "Certificate": {
