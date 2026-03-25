@@ -23,7 +23,7 @@ LAYOUT = {
 }
 
 INFORMATION = (pathlib.Path(__file__).parent / "information" / "firmware_binaries_information.md").read_text()
-LICENSE = (pathlib.Path(__file__).parent / "information" / "prebuilt_binaries_license.md").read_text()
+LICENSE = (pathlib.Path(__file__).parent.parent / "License.txt").read_text()
 
 def get_receipt(bin_file: str) -> dict:
     """Attempts to retrieve a receipt for the given binary file using multiple methods.

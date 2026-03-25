@@ -15,7 +15,7 @@ import tempfile
 from utility_functions import get_signed_payload_receipt
 
 INFORMATION = (pathlib.Path(__file__).parent / "information" / "signed_binaries_information.md").read_text()
-LICENSE = (pathlib.Path(__file__).parent / "information" / "prebuilt_binaries_license.md").read_text()
+LICENSE = (pathlib.Path(__file__).parent.parent / "License.txt").read_text()
 
 LAYOUT = {
     "edk2-2011-signed-secureboot-binaries": "DBX",

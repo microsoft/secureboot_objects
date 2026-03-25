@@ -33,7 +33,7 @@ ARCH_MAP = {"64-bit": "x64", "32-bit": "ia32", "32-bit ARM": "arm", "64-bit ARM"
 
 FIRMWARE_INFORMATION = (pathlib.Path(__file__).parent / "information" / "firmware_defaults_information.md").read_text()
 IMAGING_INFORMATION = (pathlib.Path(__file__).parent / "information" / "imaging_binaries_information.md").read_text()
-LICENSE = (pathlib.Path(__file__).parent / "information" / "prebuilt_binaries_license.md").read_text()
+LICENSE = (pathlib.Path(__file__).parent.parent / "License.txt").read_text()
 
 def _is_pem_encoded(certificate_data: Union[str, bytes]) -> bool:
     """This function is used to check if a certificate is pem encoded (base64 encoded).
