@@ -9,7 +9,7 @@ import json
 import logging
 
 import jsonschema
-from jsonschema import validate
+from jsonschema import FormatChecker, validate
 
 
 def validate_json_schema(json_data: dict, schema: dict) -> None:
@@ -23,7 +23,7 @@ def validate_json_schema(json_data: dict, schema: dict) -> None:
         jsonschema.exceptions.ValidationError: If the JSON data does not conform to the schema.
     """
     try:
-        validate(instance=json_data, schema=schema)
+        validate(instance=json_data, schema=schema, format_checker=FormatChecker())
         logging.info("JSON data is valid against the schema.")
     except jsonschema.exceptions.ValidationError as err:
         logging.error(f"JSON data is invalid: {err.message}")
