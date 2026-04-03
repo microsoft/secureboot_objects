@@ -1,0 +1,264 @@
+# This workflow validates KEK update files in pull requests to ensure they have
+# valid cryptographic signatures and expected payloads before merging.
+#
+# Copyright (c) Microsoft Corporation.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+name: Validate KEK Updates
+
+on:
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'PostSignedObjects/KEK/**/*.bin'
+      - 'PreSignedObjects/KEK/**/*.bin'
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  validate-kek:
+    name: Validate KEK Update Files
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout PR
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Need full history to compare with base branch
+
+    - name: Set up Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: 3.12
+        cache: 'pip'
+        cache-dependency-path: pip-requirements.txt
+
+    - name: Install Pip Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r pip-requirements.txt
+
+    - name: Get Changed KEK Files
+      id: changed-files
+      run: |
+        # Get list of changed .bin files in KEK directories
+        git fetch origin ${{ github.base_ref }}
+        CHANGED_FILES=$(git diff --name-only --diff-filter=AM origin/${{ github.base_ref }}...HEAD | grep -E '(PostSignedObjects|PreSignedObjects)/KEK/.*\.bin$' || echo "")
+
+        if [ -z "$CHANGED_FILES" ]; then
+          echo "No KEK files changed"
+          echo "has_changes=false" >> $GITHUB_OUTPUT
+        else
+          echo "Changed KEK files:"
+          echo "$CHANGED_FILES"
+          echo "has_changes=true" >> $GITHUB_OUTPUT
+          # Save changed files to a temporary file
+          echo "$CHANGED_FILES" > changed_kek_files.txt
+        fi
+
+    - name: Validate Changed KEK Files
+      id: validate
+      if: steps.changed-files.outputs.has_changes == 'true'
+      run: |
+        VALIDATION_FAILED=0
+        VALIDATION_RESULTS_DIR="kek_validation_results"
+        mkdir -p "$VALIDATION_RESULTS_DIR"
+
+        # Accumulators for PR comment data
+        ALL_OUTPUT=""
+        ALL_JSON=""
+        ALL_HASHES=""
+
+        echo "## KEK Validation Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+
+        while IFS= read -r file; do
+          if [ -f "$file" ]; then
+            echo "Validating: $file"
+            BASENAME=$(basename "$file" .bin)
+            OUTPUT_JSON="$VALIDATION_RESULTS_DIR/${BASENAME}_validation.json"
+
+            # Compute SHA-256 of the binary
+            FILE_HASH=$(sha256sum "$file" | awk '{print $1}')
+            ALL_HASHES="${ALL_HASHES}${file}: ${FILE_HASH}\n"
+
+            # Run validation and capture both exit code and stdout/stderr
+            CMD="python scripts/validate_kek.py \"$file\" -o \"$OUTPUT_JSON\" -q"
+            CMD_OUTPUT=$(python scripts/validate_kek.py "$file" -o "$OUTPUT_JSON" -q 2>&1) || true
+            CMD_EXIT=$?
+            ALL_OUTPUT="${ALL_OUTPUT}\$ ${CMD}\n${CMD_OUTPUT}\n\n"
+
+            if [ -f "$OUTPUT_JSON" ]; then
+              # Parse JSON to check both signature and payload
+              SIGNATURE_VALID=$(jq -r '.result.valid' "$OUTPUT_JSON")
+              PAYLOAD_VALID=$(jq -r '.result.payload_hash_valid' "$OUTPUT_JSON")
+              JSON_CONTENT=$(cat "$OUTPUT_JSON")
+              ALL_JSON="${ALL_JSON}### ${file}\n\`\`\`json\n${JSON_CONTENT}\n\`\`\`\n\n"
+
+              if [ "$SIGNATURE_VALID" = "true" ] && [ "$PAYLOAD_VALID" = "true" ]; then
+                echo "✅ **PASS**: \`$file\`" >> $GITHUB_STEP_SUMMARY
+                echo "  - Cryptographic Signature: ✅ VALID" >> $GITHUB_STEP_SUMMARY
+                echo "  - Expected Payload: ✅ True" >> $GITHUB_STEP_SUMMARY
+              elif [ "$SIGNATURE_VALID" = "true" ] && [ "$PAYLOAD_VALID" = "false" ]; then
+                echo "⚠️ **WARNING**: \`$file\`" >> $GITHUB_STEP_SUMMARY
+                echo "  - Cryptographic Signature: ✅ VALID" >> $GITHUB_STEP_SUMMARY
+                echo "  - Expected Payload: ⚠️ False (non-standard payload)" >> $GITHUB_STEP_SUMMARY
+                PAYLOAD_HASH=$(jq -r '.result.payload_hash' "$OUTPUT_JSON")
+                echo "  - Payload Hash: \`$PAYLOAD_HASH\`" >> $GITHUB_STEP_SUMMARY
+                # Don't fail on payload mismatch, just warn
+              else
+                echo "❌ **FAIL**: \`$file\`" >> $GITHUB_STEP_SUMMARY
+                echo "  - Cryptographic Signature: ❌ INVALID" >> $GITHUB_STEP_SUMMARY
+                echo "  - Expected Payload: $([ "$PAYLOAD_VALID" = "true" ] && echo "✅ True" || echo "⚠️ False")" >> $GITHUB_STEP_SUMMARY
+                VALIDATION_FAILED=1
+              fi
+            else
+              echo "❌ **FAIL**: \`$file\` - Validation script failed" >> $GITHUB_STEP_SUMMARY
+              ALL_JSON="${ALL_JSON}### ${file}\nNo JSON output produced.\n\n"
+              VALIDATION_FAILED=1
+            fi
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+        done < changed_kek_files.txt
+
+        # Save comment body to a file for the comment step
+        COMMENT_FILE="kek_validation_comment.md"
+        echo '<!-- kek-validation-comment -->' > "$COMMENT_FILE"
+        echo '❌ **KEK Validation Failed**' >> "$COMMENT_FILE"
+        echo '' >> "$COMMENT_FILE"
+        echo '### File Hashes (SHA-256)' >> "$COMMENT_FILE"
+        echo '```' >> "$COMMENT_FILE"
+        printf '%b' "$ALL_HASHES" >> "$COMMENT_FILE"
+        echo '```' >> "$COMMENT_FILE"
+        echo '' >> "$COMMENT_FILE"
+        echo '### Command Output' >> "$COMMENT_FILE"
+        echo '```' >> "$COMMENT_FILE"
+        printf '%b' "$ALL_OUTPUT" >> "$COMMENT_FILE"
+        echo '```' >> "$COMMENT_FILE"
+        echo '' >> "$COMMENT_FILE"
+        echo '### Validation Results' >> "$COMMENT_FILE"
+        printf '%b' "$ALL_JSON" >> "$COMMENT_FILE"
+        echo '' >> "$COMMENT_FILE"
+        echo '### Reproduce Locally' >> "$COMMENT_FILE"
+        echo '```' >> "$COMMENT_FILE"
+        echo 'pip install -r pip-requirements.txt' >> "$COMMENT_FILE"
+        echo 'python scripts/validate_kek.py <path-to-kek-bin-file> -v' >> "$COMMENT_FILE"
+        echo '```' >> "$COMMENT_FILE"
+
+        # Append detailed results to step summary
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### File Hashes (SHA-256)" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        printf '%b' "$ALL_HASHES" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Command Output" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        printf '%b' "$ALL_OUTPUT" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        printf '%b' "$ALL_JSON" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Reproduce Locally" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+        echo "pip install -r pip-requirements.txt" >> $GITHUB_STEP_SUMMARY
+        echo "python scripts/validate_kek.py <path-to-kek-bin-file> -v" >> $GITHUB_STEP_SUMMARY
+        echo '```' >> $GITHUB_STEP_SUMMARY
+
+        # Upload validation results as artifact
+        if [ -d "$VALIDATION_RESULTS_DIR" ] && [ "$(ls -A $VALIDATION_RESULTS_DIR)" ]; then
+          echo "Uploading validation results..."
+        fi
+
+        # Exit with error if any validation failed
+        if [ $VALIDATION_FAILED -eq 1 ]; then
+          echo "::error::One or more KEK files have invalid cryptographic signatures"
+          exit 1
+        fi
+
+    - name: Upload Validation Results
+      if: steps.changed-files.outputs.has_changes == 'true' && always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: kek-validation-results
+        path: kek_validation_results/
+        retention-days: 30
+
+    - name: Generate Token
+      id: app-token
+      if: steps.changed-files.outputs.has_changes == 'true' && always()
+      continue-on-error: true
+      uses: actions/create-github-app-token@v3
+      with:
+        app-id: ${{ vars.MU_ACCESS_APP_ID }}
+        private-key: ${{ secrets.MU_ACCESS_APP_PRIVATE_KEY }}
+        owner: ${{ github.repository_owner }}
+
+    - name: Comment on PR
+      if: steps.changed-files.outputs.has_changes == 'true' && failure() && steps.app-token.outputs.token
+      continue-on-error: true
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ steps.app-token.outputs.token }}
+        script: |
+          const fs = require('fs');
+          const marker = '<!-- kek-validation-comment -->';
+          const body = fs.readFileSync('kek_validation_comment.md', 'utf8')
+            + '\n\n_Updated: ' + new Date().toISOString() + '_';
+          try {
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number
+            });
+            const existing = comments.find(c => c.body.includes(marker));
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body
+              });
+            }
+          } catch (error) {
+            core.warning(`Unable to post PR comment: ${error.message}`)
+          }
+
+    - name: Update PR Comment on Success
+      if: steps.changed-files.outputs.has_changes == 'true' && success() && steps.app-token.outputs.token
+      continue-on-error: true
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ steps.app-token.outputs.token }}
+        script: |
+          const marker = '<!-- kek-validation-comment -->';
+          try {
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number
+            });
+            const existing = comments.find(c => c.body.includes(marker));
+            if (existing) {
+              const body = marker + '\n\u2705 **KEK Validation Passed**\n\n'
+                + 'All KEK update files have valid cryptographic signatures.\n\n'
+                + '_Updated: ' + new Date().toISOString() + '_';
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body
+              });
+            }
+          } catch (error) {
+            core.warning(`Unable to update PR comment: ${error.message}`)
+          }
