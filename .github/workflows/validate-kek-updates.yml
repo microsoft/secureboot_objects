@@ -186,11 +186,22 @@ jobs:
         path: kek_validation_results/
         retention-days: 30
 
+    - name: Generate Token
+      id: app-token
+      if: steps.changed-files.outputs.has_changes == 'true' && always()
+      continue-on-error: true
+      uses: actions/create-github-app-token@v3
+      with:
+        app-id: ${{ vars.MU_ACCESS_APP_ID }}
+        private-key: ${{ secrets.MU_ACCESS_APP_PRIVATE_KEY }}
+        owner: ${{ github.repository_owner }}
+
     - name: Comment on PR
-      if: steps.changed-files.outputs.has_changes == 'true' && failure()
+      if: steps.changed-files.outputs.has_changes == 'true' && failure() && steps.app-token.outputs.token
       continue-on-error: true
       uses: actions/github-script@v7
       with:
+        github-token: ${{ steps.app-token.outputs.token }}
         script: |
           const fs = require('fs');
           const marker = '<!-- kek-validation-comment -->';
@@ -220,4 +231,34 @@ jobs:
             }
           } catch (error) {
             core.warning(`Unable to post PR comment: ${error.message}`)
+          }
+
+    - name: Update PR Comment on Success
+      if: steps.changed-files.outputs.has_changes == 'true' && success() && steps.app-token.outputs.token
+      continue-on-error: true
+      uses: actions/github-script@v7
+      with:
+        github-token: ${{ steps.app-token.outputs.token }}
+        script: |
+          const marker = '<!-- kek-validation-comment -->';
+          try {
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number
+            });
+            const existing = comments.find(c => c.body.includes(marker));
+            if (existing) {
+              const body = marker + '\n\u2705 **KEK Validation Passed**\n\n'
+                + 'All KEK update files have valid cryptographic signatures.\n\n'
+                + '_Updated: ' + new Date().toISOString() + '_';
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body
+              });
+            }
+          } catch (error) {
+            core.warning(`Unable to update PR comment: ${error.message}`)
           }
