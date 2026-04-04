@@ -6,3 +6,4 @@ pefile==2024.8.26
 pyasn1==0.6.3
 pyasn1_modules==0.4.2
 cryptography==46.0.6
+jsonschema[format]==4.26.0

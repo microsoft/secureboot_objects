@@ -61,6 +61,9 @@ jobs:
     - name: Run Unit Tests
       run: pytest scripts/
 
+    - name: Validate DBX JSON Schema
+      run: python scripts/validate_schema.py PreSignedObjects/DBX/dbx_info_msft_latest.json PreSignedObjects/DBX/HashesJsonSchema.json
+
     - name: Validate DBX Certificate References
       run: python scripts/validate_dbx_references.py PreSignedObjects/DBX
 
