@@ -791,6 +791,14 @@
             "issued_by": "CN=JPik"
         }
     },
+    "9f9c14b59d14ba2be810c697402643809e888e28": {
+        "KEKUpdate": "JDL/KEKUpdate_JDL_PK9F9C14B5.bin",
+        "Certificate": {
+            "serial_number": "172347c60d25f7a7414bec46aa3d1db3",
+            "issued_to": "CN=JDL PK 2021,O=Japan Digital Laboratory Co.\\, Ltd.,C=JP",
+            "issued_by": "CN=JDL PK 2021,O=Japan Digital Laboratory Co.\\, Ltd.,C=JP"
+        }
+    },
     "c1604e286d306f082fc289ac121c480fb85b4bdf": {
         "KEKUpdate": "Juniper/KEKUpdate_Juniper_PK1.bin",
         "Certificate": {
