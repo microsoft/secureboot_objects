@@ -199,7 +199,7 @@ jobs:
     - name: Comment on PR
       if: steps.changed-files.outputs.has_changes == 'true' && failure() && steps.app-token.outputs.token
       continue-on-error: true
-      uses: actions/github-script@v8
+      uses: actions/github-script@v9
       with:
         github-token: ${{ steps.app-token.outputs.token }}
         script: |
@@ -236,7 +236,7 @@ jobs:
     - name: Update PR Comment on Success
       if: steps.changed-files.outputs.has_changes == 'true' && success() && steps.app-token.outputs.token
       continue-on-error: true
-      uses: actions/github-script@v8
+      uses: actions/github-script@v9
       with:
         github-token: ${{ steps.app-token.outputs.token }}
         script: |
