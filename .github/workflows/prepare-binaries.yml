@@ -87,7 +87,7 @@ jobs:
       if: startsWith(github.ref, 'refs/tags/')
 
     - name: Upload Firmware Release Archive
-      uses: softprops/action-gh-release@v2
+      uses: softprops/action-gh-release@v3
       if: startsWith(github.ref, 'refs/tags/') && !endsWith(github.event.release.tag_name, '-signed')
       with:
         files: ReleaseFirmwareArchive/*
@@ -98,7 +98,7 @@ jobs:
       if: startsWith(github.ref, 'refs/tags/')
 
     - name: Upload Signed Release Archive
-      uses: softprops/action-gh-release@v2
+      uses: softprops/action-gh-release@v3
       if: startsWith(github.ref, 'refs/tags/') && endsWith(github.event.release.tag_name, '-signed')
       with:
         files: ReleaseSignedArtifacts/*
