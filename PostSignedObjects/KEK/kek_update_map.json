@@ -207,6 +207,14 @@
             "issued_by": "CN=Dell secure boot platform key 2022,O=Dell Technologies Inc.,L=Portland,ST=California,C=US"
         }
     },
+    "5221a9531628347c8ab59a4724b0990874ced8ff": {
+        "KEKUpdate": "Adlink/KEKUpdate_Adlink_PK5221A953.bin",
+        "Certificate": {
+            "serial_number": "574d860c1d33e9f474aeef6e3cfc557",
+            "issued_to": "CN=ADLINK PK Certificate",
+            "issued_by": "CN=ADLINK PK Certificate"
+        }
+    },
     "5ecf2d6a6727b27ab195498d9c10d8ae88d3d606": {
         "KEKUpdate": "Adlink/KEKUpdate_Adlink_PK5ECF2D6A.bin",
         "Certificate": {
@@ -789,6 +797,14 @@
             "serial_number": "8918145b11e5a69044109544448d02b0",
             "issued_to": "CN=JPik",
             "issued_by": "CN=JPik"
+        }
+    },
+    "9f9c14b59d14ba2be810c697402643809e888e28": {
+        "KEKUpdate": "JDL/KEKUpdate_JDL_PK9F9C14B5.bin",
+        "Certificate": {
+            "serial_number": "172347c60d25f7a7414bec46aa3d1db3",
+            "issued_to": "CN=JDL PK 2021,O=Japan Digital Laboratory Co.\\, Ltd.,C=JP",
+            "issued_by": "CN=JDL PK 2021,O=Japan Digital Laboratory Co.\\, Ltd.,C=JP"
         }
     },
     "c1604e286d306f082fc289ac121c480fb85b4bdf": {
