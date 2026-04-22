@@ -3647,6 +3647,14 @@
             "issued_by": "CN=Samsung Mobile Experience NC PK ROOT"
         }
     },
+    "75d67554b3f49e3e83108c6daa067873dab65984": {
+        "KEKUpdate": "Siemens/KEKUpdate_Siemens_PK75d67554.bin",
+        "Certificate": {
+            "serial_number": "68f84b5469c515c237bf51c6f12a2f70ce22f565",
+            "issued_to": "CN=FW_MEV6 PK,OU=DI FA CTR IPC PRC2,O=Siemens AG,L=Karlsruhe,ST=BW,C=DE",
+            "issued_by": "CN=FW_MEV6 PK,OU=DI FA CTR IPC PRC2,O=Siemens AG,L=Karlsruhe,ST=BW,C=DE"
+        }
+    },
     "00206cd6f1df2e2e9eaf9d28d81a2aa671cb95ab": {
         "KEKUpdate": "Supermicro/KEKUpdate_Supermicro_PK1.bin",
         "Certificate": {
