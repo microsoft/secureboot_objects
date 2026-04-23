@@ -12,6 +12,9 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+from pyasn1.codec.der.decoder import decode as der_decode
+from pyasn1_modules import rfc2315
+
 # Import validation functions from auth_var_tool
 sys.path.insert(0, str(Path(__file__).parent))
 # Import the verify function from auth_var_tool
@@ -25,6 +28,25 @@ KEK_ATTRIBUTES = "NV,BS,RT,AT,AP"
 
 # Expected payload hash for Microsoft 2023 KEK (EFI Signature List with x.509)
 EXPECTED_PAYLOAD_HASH = "5b85333c009d7ea55cbb6f11a5c2ff45ee1091a968504c929aed25c84674962f"
+
+
+def has_content_info_wrapper(cert_data: bytes) -> bool:
+    """Return True if cert_data is a PKCS#7 ContentInfo(signedData) envelope.
+
+    EDK2 firmware historically expects raw SignedData in WIN_CERTIFICATE_UEFI_GUID.CertData.
+    A ContentInfo outer SEQUENCE was not supported by EDK2 until recently:
+    https://github.com/microsoft/mu_tiano_plus/commit/37d3eb026a766b2405daae47e02094c2ec248646
+
+    Submitting a file with a ContentInfo wrapper may cause authentication failures on
+    older firmware.
+    """
+    try:
+        content_info, remainder = der_decode(cert_data, asn1Spec=rfc2315.ContentInfo())
+        if remainder:
+            return False
+        return content_info.getComponentByName("contentType") == rfc2315.signedData
+    except Exception:
+        return False
 
 
 def validate_single_kek(
@@ -47,6 +69,7 @@ def validate_single_kek(
         "path": str(kek_file),
         "valid": False,
         "payload_hash_valid": False,
+        "content_info_wrapped": False,
         "error": None,
         "warnings": [],
         "details": {}
@@ -69,6 +92,15 @@ def validate_single_kek(
                 logging.warning("  [!] Payload hash mismatch!")
                 logging.warning(f"      Expected: {EXPECTED_PAYLOAD_HASH}")
                 logging.warning(f"      Got:      {payload_hash}")
+
+            # Check for ContentInfo wrapper in cert_data
+            file_result["content_info_wrapped"] = has_content_info_wrapper(auth_var.auth_info.cert_data)
+            if file_result["content_info_wrapped"]:
+                warning_msg = (
+                    "cert_data contains a PKCS#7 ContentInfo wrapper. "
+                )
+                file_result["warnings"].append(warning_msg)
+                logging.warning("  [!] ContentInfo wrapper detected in cert_data!")
 
         # Validate the file using auth_var_tool.verify_variable
         # Create a namespace object with the required arguments
@@ -183,6 +215,7 @@ def validate_kek_folder(
             "path": str(bin_file),
             "valid": False,
             "payload_hash_valid": False,
+            "content_info_wrapped": False,
             "error": None,
             "warnings": [],
             "details": {}
@@ -205,6 +238,15 @@ def validate_kek_folder(
                     logging.warning("  [!] Payload hash mismatch!")
                     logging.warning(f"      Expected: {EXPECTED_PAYLOAD_HASH}")
                     logging.warning(f"      Got:      {payload_hash}")
+
+                # Check for ContentInfo wrapper in cert_data
+                file_result["content_info_wrapped"] = has_content_info_wrapper(auth_var.auth_info.cert_data)
+                if file_result["content_info_wrapped"]:
+                    warning_msg = (
+                        "cert_data contains a PKCS#7 ContentInfo wrapper."
+                    )
+                    file_result["warnings"].append(warning_msg)
+                    logging.warning("  [!] ContentInfo wrapper detected in cert_data!")
 
             # Validate the file using auth_var_tool.verify_variable
             # Create a namespace object with the required arguments

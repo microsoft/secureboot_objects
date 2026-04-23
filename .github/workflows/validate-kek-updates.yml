@@ -94,10 +94,11 @@ jobs:
               # Parse JSON to check both signature and payload
               SIGNATURE_VALID=$(jq -r '.result.valid' "$OUTPUT_JSON")
               PAYLOAD_VALID=$(jq -r '.result.payload_hash_valid' "$OUTPUT_JSON")
+              CONTENT_INFO_WRAPPED=$(jq -r '.result.content_info_wrapped' "$OUTPUT_JSON")
               JSON_CONTENT=$(cat "$OUTPUT_JSON")
               ALL_JSON="${ALL_JSON}### ${file}\n\`\`\`json\n${JSON_CONTENT}\n\`\`\`\n\n"
 
-              if [ "$SIGNATURE_VALID" = "true" ] && [ "$PAYLOAD_VALID" = "true" ]; then
+              if [ "$SIGNATURE_VALID" = "true" ] && [ "$PAYLOAD_VALID" = "true" ] && [ "$CONTENT_INFO_WRAPPED" = "false" ]; then
                 echo "✅ **PASS**: \`$file\`" >> $GITHUB_STEP_SUMMARY
                 echo "  - Cryptographic Signature: ✅ VALID" >> $GITHUB_STEP_SUMMARY
                 echo "  - Expected Payload: ✅ True" >> $GITHUB_STEP_SUMMARY
@@ -108,6 +109,16 @@ jobs:
                 PAYLOAD_HASH=$(jq -r '.result.payload_hash' "$OUTPUT_JSON")
                 echo "  - Payload Hash: \`$PAYLOAD_HASH\`" >> $GITHUB_STEP_SUMMARY
                 # Don't fail on payload mismatch, just warn
+              elif [ "$CONTENT_INFO_WRAPPED" = "true" ]; then
+                echo "⚠️ **WARNING**: \`$file\`" >> $GITHUB_STEP_SUMMARY
+                echo "  - Cryptographic Signature: ✅ VALID" >> $GITHUB_STEP_SUMMARY
+                echo "  - Expected Payload: ✅ True" >> $GITHUB_STEP_SUMMARY
+                echo "  - ContentInfo Wrapper: ⚠️ Detected" >> $GITHUB_STEP_SUMMARY
+                echo "  > **Why this matters:** The PKCS\#7 signature contains an outer \`ContentInfo\` SEQUENCE" >> $GITHUB_STEP_SUMMARY
+                echo "  > wrapping the \`SignedData\`. Older EDK2-based firmware expects raw \`SignedData\` in" >> $GITHUB_STEP_SUMMARY
+                echo "  > \`WIN_CERTIFICATE_UEFI_GUID.CertData\` and will reject the update. Use" >> $GITHUB_STEP_SUMMARY
+                echo "  > \`scripts/strip_content_info.py\` to remove the wrapper before submitting." >> $GITHUB_STEP_SUMMARY
+                # Don't fail on ContentInfo wrapper, just warn
               else
                 echo "❌ **FAIL**: \`$file\`" >> $GITHUB_STEP_SUMMARY
                 echo "  - Cryptographic Signature: ❌ INVALID" >> $GITHUB_STEP_SUMMARY
