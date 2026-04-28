@@ -6907,7 +6907,7 @@
             "value": "01612B139DD5598843AB1C185C3CB2EB92000007000000000000000000000000",
             "version": "7.0",
             "filename": "bootmgfw.efi",
-            "guid": "{9d132b61-59d5-4388-1cab-185c3cb2eb92} == EFI_BOOTMGR_DBXSVN_GUID",
+            "guid": "{9d132b61-59d5-4388-ab1c-185c3cb2eb92} == EFI_BOOTMGR_DBXSVN_GUID",
             "description": "Windows Bootmgr SVN CVE-2023-24932",
             "dateOfLastChange": "2025-06-06"
         },
