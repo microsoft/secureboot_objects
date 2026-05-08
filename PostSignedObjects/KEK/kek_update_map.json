@@ -3727,6 +3727,14 @@
             "issued_by": "CN=FW_MEV6 PK,OU=DI FA CTR IPC PRC2,O=Siemens AG,L=Karlsruhe,ST=BW,C=DE"
         }
     },
+    "cc8c0e3d54385365916340ac85f39d9e988e055f": {
+        "KEKUpdate": "Siemens/KEKUpdate_Siemens_PKcc8c0e3d.bin",
+        "Certificate": {
+            "serial_number": "15b3bb5281891fc251e04ae54c49e18359e8523d",
+            "issued_to": "CN=PGX PK,OU=DI FA CTR IPC PRC2,O=Siemens AG,L=Karlsruhe,ST=BW,C=DE",
+            "issued_by": "CN=PGX PK,OU=DI FA CTR IPC PRC2,O=Siemens AG,L=Karlsruhe,ST=BW,C=DE"
+        }
+    },
     "00206cd6f1df2e2e9eaf9d28d81a2aa671cb95ab": {
         "KEKUpdate": "Supermicro/KEKUpdate_Supermicro_PK1.bin",
         "Certificate": {
