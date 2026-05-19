@@ -1,0 +1,71 @@
+# This workflow parses changed secure boot update binaries into JSON receipts
+# so pull request reviewers can inspect human-readable content.
+#
+# Copyright (c) Microsoft Corporation.
+# SPDX-License-Identifier: BSD-2-Clause-Patent
+name: Parse Updated EFI Binaries
+
+on:
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'PostSignedObjects/**/*.bin'
+      - 'PreSignedObjects/**/*.bin'
+
+permissions:
+  contents: read
+
+jobs:
+  parse-update-bins:
+    name: Parse Changed Update Bins
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: 3.12
+          cache: 'pip'
+          cache-dependency-path: pip-requirements.txt
+
+      - name: Install Pip Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r pip-requirements.txt
+
+      - name: Get Changed Bin Files
+        id: changed-files
+        run: |
+          git fetch origin ${{ github.base_ref }}
+          CHANGED_FILES=$(git diff --name-only --diff-filter=AMR origin/${{ github.base_ref }}...HEAD | grep -E '^(PostSignedObjects|PreSignedObjects)/.*\.bin$' || echo "")
+
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "No matching .bin files changed."
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+            echo "$CHANGED_FILES" > changed_bin_files.txt
+            echo "Changed files:"
+            cat changed_bin_files.txt
+          fi
+
+      - name: Parse Changed Bin Files
+        if: steps.changed-files.outputs.has_changes == 'true'
+        run: |
+          python scripts/parse_update_bins_for_review.py \
+            --file-list changed_bin_files.txt \
+            --output-dir parsed-bin-receipts \
+            --repo-root .
+
+      - name: Upload Parsed Receipts
+        if: steps.changed-files.outputs.has_changes == 'true' && always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: parsed-update-bin-receipts
+          path: parsed-bin-receipts/
+          retention-days: 30
