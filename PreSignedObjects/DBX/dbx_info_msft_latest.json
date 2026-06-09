@@ -4463,6 +4463,16 @@
                 "signingAuthority": "CN = Microsoft Corporation UEFI CA 2011"
               },
               {
+                  "authenticodeHash": "D013BA511AEE89BA3285D1CAC0C9F4F21EF4810873C2EBBFFE7712BF0BE8CED3",
+                  "hashType": "SHA256",
+                  "flatHash": "926BB1A08E1427AB7E14587955D451A8A05808BE609C92CB74668B0828DD8CE1",
+                  "filename": "shdloader.efi",
+                  "description": "EasyFix tool from EAZ solutions",
+                  "companyName": "EAZ Solutions",
+                  "dateOfAddition": "2026-04-02",
+                  "signingAuthority": "CN = Microsoft Corporation UEFI CA 2011"
+              },
+              {
                 "authenticodeHash": "AE75F0D82BA3DF824FBFC69340CC3B4D66C598373B1AB54CDB6C8BFD83A6B961",
                 "hashType": "SHA256",
                 "flatHash": "1D18DF4B15D3BC3DFFA1777A557075210DD0C53B",
