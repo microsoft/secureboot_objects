@@ -4461,6 +4461,116 @@
                 "companyName": "IGEL",
                 "dateOfAddition": "2025-09-02",
                 "signingAuthority": "CN = Microsoft Corporation UEFI CA 2011"
+              },
+              {
+                "authenticodeHash": "AE75F0D82BA3DF824FBFC69340CC3B4D66C598373B1AB54CDB6C8BFD83A6B961",
+                "hashType": "SHA256",
+                "flatHash": "1D18DF4B15D3BC3DFFA1777A557075210DD0C53B",
+                "filename": "bootX64.efi",
+                "description": "Uploaded to VirusTotal as a part of ZIP archive named spyrus.zip which contains files related to WTGCreator software in version V4.2",
+                "companyName": "Spyrus",
+                "dateOfAddition": "2026-04-09",
+                "signingAuthority": "CN = Microsoft Corporation UEFI CA 2011"
+              },
+              {
+                "authenticodeHash": "7B2A3F5C96F95BD8086CE54B0825E300F9C8F11FE3401BB631B3215C8DE9EB10",
+                "hashType": "SHA256",
+                "flatHash": "3F24DD838C5C9E35B104FA2F3B74AC6A5BF92FD2",
+                "filename": "BOOTX64.EFI",
+                "description": "The shim can be found in the rhel-server-7.2-x86_64-dvd.iso",
+                "companyName": "RedHat",
+                "dateOfAddition": "2026-04-09",
+                "signingAuthority": "CN = Microsoft Corporation UEFI CA 2011"
+              },
+              {
+                "authenticodeHash": "EB86FA1386FE6E4533B8B938DCC1250616D2F1C14C15E2FCF80834A161018A0A",
+                "hashType": "SHA256",
+                "flatHash": "E133BE08E8AD17AC00E3C8ED215499C5F3C54E64",
+                "filename": "BOOTX64.EFI",
+                "description": "The shim can be found in the CentOS-7-x86_64-DVD-1511.iso",
+                "companyName": "RedHat",
+                "dateOfAddition": "2026-04-09",
+                "signingAuthority": "CN = Microsoft Corporation UEFI CA 2011"
+              },
+              {
+                "authenticodeHash": "FD23D6E57DE6F4E1F9D7118DA1C5F31A8AF6BE5E5D9E8170F9493447268D50C5",
+                "hashType": "SHA256",
+                "flatHash": "8637D7EFA23A8A5738F2E4AACB6C9919B405AA2C",
+                "filename": "shim_x64.efi",
+                "description": "Part of Baramanudi Management Suite software",
+                "companyName": "Baramundi",
+                "dateOfAddition": "2026-04-09",
+                "signingAuthority": "CN = Microsoft Corporation UEFI CA 2011"
+              },
+              {
+                "authenticodeHash": "A0DE9333442C1BF9349A460141AE5E80F911955C6506040FA3D021BF6C1AE3E4",
+                "hashType": "SHA256",
+                "flatHash": "8A402AFCD3C23D9253BBEA08576113C63E448AD0",
+                "filename": "",
+                "description": "part of ISO image named wd-enterprise-dongle.iso",
+                "companyName": "WhiteCanyon/blancco",
+                "dateOfAddition": "2026-04-09",
+                "signingAuthority": "CN = Microsoft Corporation UEFI CA 2011"
+              },
+              {
+                "authenticodeHash": "95B6D71FC0C0F8C5E1533A37AEF92CF6B0C961E2CC612A97117FA6759CE5FC06",
+                "hashType": "SHA256",
+                "flatHash": "8A83FA30DBF0073F33EAD298A7D5CD69A47C3A4B",
+                "filename": "vbootx64.efi",
+                "description": "",
+                "companyName": "Finland's Matriculation Examination Board",
+                "dateOfAddition": "2026-04-09",
+                "signingAuthority": "CN = Microsoft Corporation UEFI CA 2011"
+              },
+              {
+                "authenticodeHash": "236A9CB0D71951C36398A32EB660CE2CD4A52CCFA7CF751CC6A35D9DE549E19B",
+                "hashType": "SHA256",
+                "flatHash": "8F9E8DB8E2C2157C2A591F2BE070FF96BFE318C7",
+                "filename": "",
+                "description": "The shim can be found in ROSA.FRESH.PLASMA.R9.x86_64.uefi.iso or ROSA.FRESH.PLASMA.R10.x86_64.uefi.iso",
+                "companyName": "NTC IT ROSA, LLC",
+                "dateOfAddition": "2026-04-09",
+                "signingAuthority": "CN = Microsoft Corporation UEFI CA 2011"
+              },
+              {
+                "authenticodeHash": "5E594C448760A3135B1A3A83E07A4F2E6FBE49414EF2C7CAB1CBA77F284FA63B",
+                "hashType": "SHA256",
+                "flatHash": "A16136899A12AD214FA4FBA60072BA72FBAB8BCA",
+                "filename": "shimx64.efi",
+                "description": "The shim can be found in the OracleLinux-R7-U2-Server-x86_64-dvd.iso or shim-signed-0.9-2.0.3.el7.src.rpm package from the OracleLinux 7.2",
+                "companyName": "Oracle America, Inc.",
+                "dateOfAddition": "2026-04-09",
+                "signingAuthority": "CN = Microsoft Corporation UEFI CA 2011"
+              },
+              {
+                "authenticodeHash": "8A964D5F8373948D20A1D4296FB92E545DAD4617A0C810F3B934B53D98AE8963",
+                "hashType": "SHA256",
+                "flatHash": "BC01320D8FF8343B348EF8F3C947A66EB8FD9CE2",
+                "filename": "bootx64.efi",
+                "description": "",
+                "companyName": "PC-Doctor, Inc.",
+                "dateOfAddition": "2026-04-09",
+                "signingAuthority": "CN = Microsoft Corporation UEFI CA 2011"
+              },
+              {
+                "authenticodeHash": "410260B1B6F5AF5FBEEB9EA3220658435E876CB3247126EE907A437F312DB373",
+                "hashType": "SHA256",
+                "flatHash": "3CF8BEB1E2885F51CA04002425C4F3C796D105BC",
+                "filename": "shimx64.efi",
+                "description": "OpenSUSE shim-0.9-10.1.x86_64.rpm",
+                "companyName": "OpenSUSE",
+                "dateOfAddition": "2026-04-09",
+                "signingAuthority": "CN = Microsoft Corporation UEFI CA 2011"
+              },
+              {
+                "authenticodeHash": "96275DFD6282A522B011177EE049296952AC794832091F937FBBF92869028629",
+                "hashType": "SHA256",
+                "flatHash": "6DB5266E80C9D51CDD54421E736DF2E6E6879A56",
+                "filename": "shimx64.efi",
+                "description": "OpenSUSE shim-0.9-2.1.x86_64.rpm",
+                "companyName": "OpenSUSE",
+                "dateOfAddition": "2026-04-09",
+                "signingAuthority": "CN = Microsoft Corporation UEFI CA 2011"
               }
             ],
             "ia32": [
@@ -6904,8 +7014,8 @@
     ],
 	"svns": [
 		{
-            "value": "01612B139DD5598843AB1C185C3CB2EB92000008000000000000000000000000",
-            "version": "8.0",
+            "value": "01612B139DD5598843AB1C185C3CB2EB92000009000000000000000000000000",
+            "version": "9.0",
             "filename": "bootmgfw.efi",
             "guid": "{9d132b61-59d5-4388-ab1c-185c3cb2eb92} == EFI_BOOTMGR_DBXSVN_GUID",
             "description": "Windows Bootmgr SVN CVE-2023-24932",
