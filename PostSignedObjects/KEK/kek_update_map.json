@@ -3495,6 +3495,14 @@
             "issued_by": "CN=Microsoft Surface Services for Windows 8 Pro CA 2012,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US"
         }
     },
+    "f7ce165799cce9d68d5c236664ebe4903e2cb02a": {
+        "KEKUpdate": "Microsoft/KEKUpdate_Microsoft_PK26.bin",
+        "Certificate": {
+            "serial_number": "330000000bc06653149db57abd00000000000b",
+            "issued_to": "CN=Microsoft Surface LFF UEFI PK CA 2014,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US",
+            "issued_by": "CN=Microsoft Surface Services for Windows 8 Pro CA 2012,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US"
+        }
+    },
     "017439b429ac01514cc62311f5d5779341d57c82": {
         "KEKUpdate": "Mouse Computer Co Ltd/KEKUpdate_Mouse_Computer_Co_Ltd_PK1.bin",
         "Certificate": {
