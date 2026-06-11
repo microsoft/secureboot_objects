@@ -3367,12 +3367,76 @@
             "issued_by": "CN=Microsoft Corporation Third Party Marketplace Root,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US"
         }
     },
+    "4484f86ec587a3331fd9bbcfa686163160e988e2": {
+        "KEKUpdate": "Microsoft/KEKUpdate_Microsoft_PK19.bin",
+        "Certificate": {
+            "serial_number": "33000000032553d54d8aa4f0a8000000000003",
+            "issued_to": "CN=Microsoft Surface SH2 2022 UEFI PK Signer,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US",
+            "issued_by": "CN=Microsoft Surface SH2 UEFI PK CA 2022,O=Microsoft Corporation,C=US"
+        }
+    },
     "1b6f494b7881ff564f7f9ec7e80c064d9f948454": {
         "KEKUpdate": "Microsoft/KEKUpdate_Microsoft_PK2.bin",
         "Certificate": {
             "serial_number": "3300000005b0d79d6a25b4bcfd000000000005",
             "issued_to": "CN=Microsoft Surface XLFF 2 UEFI PK Signer,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US",
             "issued_by": "CN=Microsoft Surface XLFF 2 UEFI PK CA 2016,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US"
+        }
+    },
+    "999b48e3e9ab04d5225301ea5fe9bca01abd7021": {
+        "KEKUpdate": "Microsoft/KEKUpdate_Microsoft_PK20.bin",
+        "Certificate": {
+            "serial_number": "3300000013bd6ce0416871e107000000000013",
+            "issued_to": "CN=Microsoft Surface AFF UEFI PK CA 2015,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US",
+            "issued_by": "CN=Microsoft Surface Services for Windows 8 Pro CA 2012,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US"
+        }
+    },
+    "cb8f3251825dbea9d51c84f03b5c4ee7f9b8a1ad": {
+        "KEKUpdate": "Microsoft/KEKUpdate_Microsoft_PK21.bin",
+        "Certificate": {
+            "serial_number": "330000001be78bae24e4ec1b2500000000001b",
+            "issued_to": "CN=Microsoft Surface LFF 3 Firmware CA 2016,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US",
+            "issued_by": "CN=Microsoft Corporation Third Party Marketplace Root,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US"
+        }
+    },
+    "5eae312b07e50b3a42505c7939122b67d55d407a": {
+        "KEKUpdate": "Microsoft/KEKUpdate_Microsoft_PK22.bin",
+        "Certificate": {
+            "serial_number": "3300000004592142bd8877b850000000000004",
+            "issued_to": "CN=Microsoft Surface LFF 3 UEFI PK Signer,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US",
+            "issued_by": "CN=Microsoft Surface LFF 3 UEFI PK CA 2016,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US"
+        }
+    },
+    "c35bfe0d95bbcac762e7a9737eb2bf76ffee7b59": {
+        "KEKUpdate": "Microsoft/KEKUpdate_Microsoft_PK23.bin",
+        "Certificate": {
+            "serial_number": "33000000045e848af3bce10f7a000000000004",
+            "issued_to": "CN=Microsoft Surface NFF UEFI PK Signer,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US",
+            "issued_by": "CN=Microsoft Surface NFF UEFI PK CA 2015,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US"
+        }
+    },
+    "e8dfd45c4c0d448b3cf0690f5d0015a65e1e1ff0": {
+        "KEKUpdate": "Microsoft/KEKUpdate_Microsoft_PK24.bin",
+        "Certificate": {
+            "serial_number": "330000000f164e6168c323f0c700000000000f",
+            "issued_to": "CN=Microsoft Surface LFF 2 UEFI PK CA 2014,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US",
+            "issued_by": "CN=Microsoft Surface Services for Windows 8 Pro CA 2012,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US"
+        }
+    },
+    "f4bc8d5612a016f593639b4ff01ea945d80e06be": {
+        "KEKUpdate": "Microsoft/KEKUpdate_Microsoft_PK25.bin",
+        "Certificate": {
+            "serial_number": "33000000113fa8b680b9432bc0000000000011",
+            "issued_to": "CN=Microsoft Surface XLFF UEFI PK CA 2014,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US",
+            "issued_by": "CN=Microsoft Surface Services for Windows 8 Pro CA 2012,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US"
+        }
+    },
+    "f7ce165799cce9d68d5c236664ebe4903e2cb02a": {
+        "KEKUpdate": "Microsoft/KEKUpdate_Microsoft_PK26.bin",
+        "Certificate": {
+            "serial_number": "330000000bc06653149db57abd00000000000b",
+            "issued_to": "CN=Microsoft Surface LFF UEFI PK CA 2014,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US",
+            "issued_by": "CN=Microsoft Surface Services for Windows 8 Pro CA 2012,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US"
         }
     },
     "3f169742cbe8830e6f6a1c0b7008932598dd912d": {
@@ -3437,70 +3501,6 @@
             "serial_number": "330000000ac2eb91922061dc5100000000000a",
             "issued_to": "CN=Microsoft Surface NFF UEFI PK Signer,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US",
             "issued_by": "CN=Microsoft Surface NFF UEFI PK CA 2015,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US"
-        }
-    },
-    "4484f86ec587a3331fd9bbcfa686163160e988e2": {
-        "KEKUpdate": "Microsoft/KEKUpdate_Microsoft_PK19.bin",
-        "Certificate": {
-            "serial_number": "33000000032553d54d8aa4f0a8000000000003",
-            "issued_to": "CN=Microsoft Surface SH2 2022 UEFI PK Signer,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US",
-            "issued_by": "CN=Microsoft Surface SH2 UEFI PK CA 2022,O=Microsoft Corporation,C=US"
-        }
-    },
-    "999b48e3e9ab04d5225301ea5fe9bca01abd7021": {
-        "KEKUpdate": "Microsoft/KEKUpdate_Microsoft_PK20.bin",
-        "Certificate": {
-            "serial_number": "3300000013bd6ce0416871e107000000000013",
-            "issued_to": "CN=Microsoft Surface AFF UEFI PK CA 2015,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US",
-            "issued_by": "CN=Microsoft Surface Services for Windows 8 Pro CA 2012,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US"
-        }
-    },
-    "cb8f3251825dbea9d51c84f03b5c4ee7f9b8a1ad": {
-        "KEKUpdate": "Microsoft/KEKUpdate_Microsoft_PK21.bin",
-        "Certificate": {
-            "serial_number": "330000001be78bae24e4ec1b2500000000001b",
-            "issued_to": "CN=Microsoft Surface LFF 3 Firmware CA 2016,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US",
-            "issued_by": "CN=Microsoft Corporation Third Party Marketplace Root,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US"
-        }
-    },
-    "5eae312b07e50b3a42505c7939122b67d55d407a": {
-        "KEKUpdate": "Microsoft/KEKUpdate_Microsoft_PK22.bin",
-        "Certificate": {
-            "serial_number": "3300000004592142bd8877b850000000000004",
-            "issued_to": "CN=Microsoft Surface LFF 3 UEFI PK Signer,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US",
-            "issued_by": "CN=Microsoft Surface LFF 3 UEFI PK CA 2016,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US"
-        }
-    },
-    "c35bfe0d95bbcac762e7a9737eb2bf76ffee7b59": {
-        "KEKUpdate": "Microsoft/KEKUpdate_Microsoft_PK23.bin",
-        "Certificate": {
-            "serial_number": "33000000045e848af3bce10f7a000000000004",
-            "issued_to": "CN=Microsoft Surface NFF UEFI PK Signer,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US",
-            "issued_by": "CN=Microsoft Surface NFF UEFI PK CA 2015,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US"
-        }
-    },
-    "e8dfd45c4c0d448b3cf0690f5d0015a65e1e1ff0": {
-        "KEKUpdate": "Microsoft/KEKUpdate_Microsoft_PK24.bin",
-        "Certificate": {
-            "serial_number": "330000000f164e6168c323f0c700000000000f",
-            "issued_to": "CN=Microsoft Surface LFF 2 UEFI PK CA 2014,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US",
-            "issued_by": "CN=Microsoft Surface Services for Windows 8 Pro CA 2012,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US"
-        }
-    },
-    "f4bc8d5612a016f593639b4ff01ea945d80e06be": {
-        "KEKUpdate": "Microsoft/KEKUpdate_Microsoft_PK25.bin",
-        "Certificate": {
-            "serial_number": "33000000113fa8b680b9432bc0000000000011",
-            "issued_to": "CN=Microsoft Surface XLFF UEFI PK CA 2014,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US",
-            "issued_by": "CN=Microsoft Surface Services for Windows 8 Pro CA 2012,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US"
-        }
-    },
-    "f7ce165799cce9d68d5c236664ebe4903e2cb02a": {
-        "KEKUpdate": "Microsoft/KEKUpdate_Microsoft_PK26.bin",
-        "Certificate": {
-            "serial_number": "330000000bc06653149db57abd00000000000b",
-            "issued_to": "CN=Microsoft Surface LFF UEFI PK CA 2014,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US",
-            "issued_by": "CN=Microsoft Surface Services for Windows 8 Pro CA 2012,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US"
         }
     },
     "017439b429ac01514cc62311f5d5779341d57c82": {
@@ -3757,6 +3757,14 @@
             "serial_number": "34cdb4902d5001cefea0580cfb7056b4836c6827",
             "issued_to": "CN=Toshiba Industrial Computer,O=TOSHIBA,ST=Tokyo,C=JP",
             "issued_by": "CN=Toshiba Industrial Computer,O=TOSHIBA,ST=Tokyo,C=JP"
+        }
+    },
+    "e03ae95f7862f2e1f75b367ed1372e73e8d8cbfd": {
+        "KEKUpdate": "TOSHIBA/KEKUpdate_TOSHIBA_PKe03ae95f.bin",
+        "Certificate": {
+            "serial_number": "9942a88a182ee96f",
+            "issued_to": "CN=Toshiba Industrial Computer",
+            "issued_by": "CN=Toshiba Industrial Computer"
         }
     },
     "029d01cb5887c2e799b15ee9a360af0ec6e72622": {
