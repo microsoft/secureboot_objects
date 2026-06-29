@@ -303,6 +303,14 @@
             "issued_by": "CN=BYD Certificate PK"
         }
     },
+    "0f70a88a84bacb061e881aa6fe6395648ed421cd": {
+        "KEKUpdate": "Decenta/KEKUpdate_Decenta_PK0F70A88A.bin",
+        "Certificate": {
+            "serial_number": "5654d28d303d23b1457d2cab4e6d1687",
+            "issued_to": "CN=Decenta_PK",
+            "issued_by": "CN=Decenta_PK"
+        }
+    },
     "38a346b84c0e230ca4f235e7355b872460770264": {
         "KEKUpdate": "Dell/KEKUpdate_Dell_PK1.bin",
         "Certificate": {
