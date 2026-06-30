@@ -3439,6 +3439,70 @@
             "issued_by": "CN=Microsoft Surface NFF UEFI PK CA 2015,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US"
         }
     },
+    "4484f86ec587a3331fd9bbcfa686163160e988e2": {
+        "KEKUpdate": "Microsoft/KEKUpdate_Microsoft_PK19.bin",
+        "Certificate": {
+            "serial_number": "33000000032553d54d8aa4f0a8000000000003",
+            "issued_to": "CN=Microsoft Surface SH2 2022 UEFI PK Signer,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US",
+            "issued_by": "CN=Microsoft Surface SH2 UEFI PK CA 2022,O=Microsoft Corporation,C=US"
+        }
+    },
+    "999b48e3e9ab04d5225301ea5fe9bca01abd7021": {
+        "KEKUpdate": "Microsoft/KEKUpdate_Microsoft_PK20.bin",
+        "Certificate": {
+            "serial_number": "3300000013bd6ce0416871e107000000000013",
+            "issued_to": "CN=Microsoft Surface AFF UEFI PK CA 2015,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US",
+            "issued_by": "CN=Microsoft Surface Services for Windows 8 Pro CA 2012,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US"
+        }
+    },
+    "cb8f3251825dbea9d51c84f03b5c4ee7f9b8a1ad": {
+        "KEKUpdate": "Microsoft/KEKUpdate_Microsoft_PK21.bin",
+        "Certificate": {
+            "serial_number": "330000001be78bae24e4ec1b2500000000001b",
+            "issued_to": "CN=Microsoft Surface LFF 3 Firmware CA 2016,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US",
+            "issued_by": "CN=Microsoft Corporation Third Party Marketplace Root,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US"
+        }
+    },
+    "5eae312b07e50b3a42505c7939122b67d55d407a": {
+        "KEKUpdate": "Microsoft/KEKUpdate_Microsoft_PK22.bin",
+        "Certificate": {
+            "serial_number": "3300000004592142bd8877b850000000000004",
+            "issued_to": "CN=Microsoft Surface LFF 3 UEFI PK Signer,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US",
+            "issued_by": "CN=Microsoft Surface LFF 3 UEFI PK CA 2016,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US"
+        }
+    },
+    "c35bfe0d95bbcac762e7a9737eb2bf76ffee7b59": {
+        "KEKUpdate": "Microsoft/KEKUpdate_Microsoft_PK23.bin",
+        "Certificate": {
+            "serial_number": "33000000045e848af3bce10f7a000000000004",
+            "issued_to": "CN=Microsoft Surface NFF UEFI PK Signer,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US",
+            "issued_by": "CN=Microsoft Surface NFF UEFI PK CA 2015,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US"
+        }
+    },
+    "e8dfd45c4c0d448b3cf0690f5d0015a65e1e1ff0": {
+        "KEKUpdate": "Microsoft/KEKUpdate_Microsoft_PK24.bin",
+        "Certificate": {
+            "serial_number": "330000000f164e6168c323f0c700000000000f",
+            "issued_to": "CN=Microsoft Surface LFF 2 UEFI PK CA 2014,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US",
+            "issued_by": "CN=Microsoft Surface Services for Windows 8 Pro CA 2012,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US"
+        }
+    },
+    "f4bc8d5612a016f593639b4ff01ea945d80e06be": {
+        "KEKUpdate": "Microsoft/KEKUpdate_Microsoft_PK25.bin",
+        "Certificate": {
+            "serial_number": "33000000113fa8b680b9432bc0000000000011",
+            "issued_to": "CN=Microsoft Surface XLFF UEFI PK CA 2014,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US",
+            "issued_by": "CN=Microsoft Surface Services for Windows 8 Pro CA 2012,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US"
+        }
+    },
+    "f7ce165799cce9d68d5c236664ebe4903e2cb02a": {
+        "KEKUpdate": "Microsoft/KEKUpdate_Microsoft_PK26.bin",
+        "Certificate": {
+            "serial_number": "330000000bc06653149db57abd00000000000b",
+            "issued_to": "CN=Microsoft Surface LFF UEFI PK CA 2014,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US",
+            "issued_by": "CN=Microsoft Surface Services for Windows 8 Pro CA 2012,O=Microsoft Corporation,L=Redmond,ST=Washington,C=US"
+        }
+    },
     "017439b429ac01514cc62311f5d5779341d57c82": {
         "KEKUpdate": "Mouse Computer Co Ltd/KEKUpdate_Mouse_Computer_Co_Ltd_PK1.bin",
         "Certificate": {
