@@ -447,10 +447,17 @@ def compute_authenticode_hash(pe_data: bytes, hash_algorithm: Optional[object] =
         hash_data = (
             pe_data[:checksum_offset] + pe_data[checksum_offset + 0x04 : certificate_table_offset]
         )
-        hash_data += (
-            pe_data[certificate_table_offset + 0x08 : certificate_virtual_addr]
-            + pe_data[certificate_virtual_addr + certificate_size :]
-        )
+        if certificate_virtual_addr == 0:
+            # Unsigned PE: the security data directory is empty (VirtualAddress == 0,
+            # Size == 0).  The naive slice pe_data[0 + 0:] would re-append the entire
+            # file, producing a wrong digest.  Instead, hash only the bytes that follow
+            # the 8-byte cert-dir data-directory entry.
+            hash_data += pe_data[certificate_table_offset + 0x08 :]
+        else:
+            hash_data += (
+                pe_data[certificate_table_offset + 0x08 : certificate_virtual_addr]
+                + pe_data[certificate_virtual_addr + certificate_size :]
+            )
 
         # Map cryptography hash algorithm to hashlib
         if isinstance(hash_algorithm, crypto_hashes.SHA256):
