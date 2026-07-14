@@ -4584,6 +4584,26 @@
                 "companyName": "OpenSUSE",
                 "dateOfAddition": "2026-04-09",
                 "signingAuthority": "CN = Microsoft Corporation UEFI CA 2011"
+            },
+            {
+                "authenticodeHash": "86A9482509A434CA61EA4D12B6010A9013E5D3FBFF09B14799EBC87C124BCFF0",
+                "hashType": "SHA256",
+                "flatHash": "70AFD5823682A7DB18112C477603626BC9A1E52A4145AEAAE5B71E545CFA8A3F",
+                "filename": "ShieldMgr-x64.efi,shdloader.efi",
+                "description": "",
+                "companyName": "New Horizon Datasys Inc",
+                "dateOfAddition": "2026-07-07",
+                "signingAuthority": "CN = Microsoft Corporation UEFI CA 2011"
+            },
+            {
+                "authenticodeHash": "2EA557C44B83C0AD6B71EFB7EDCC18B6337AD1C1D682155DD9451B051B62FF40",
+                "hashType": "SHA256",
+                "flatHash": "3115AB78B7A47A432F4A9747B032458D1F8FDE403D20E0CBE9B6A7658B33F83C",
+                "filename": "shdloader-x64.efi",
+                "description": "",
+                "companyName": "EAZ Solution Inc",
+                "dateOfAddition": "2026-07-07",
+                "signingAuthority": "CN = Microsoft Corporation UEFI CA 2011"
             }
         ],
         "ia32": [
@@ -5559,6 +5579,26 @@
                 "description": "EasyFix tool from EAZ solutions",
                 "companyName": "EAZ Solutions",
                 "dateOfAddition": "2026-04-02",
+                "signingAuthority": "CN = Microsoft Corporation UEFI CA 2011"
+            },
+            {
+                "authenticodeHash": "C38F030AE60B8D66C7F4A62280A105DDBF5985B4BF038E585BE9AC9D60BF9C34",
+                "hashType": "SHA256",
+                "flatHash": "457C029822EAC1AB8FFDA00FEA125C19D26AFA19F53F59AA5F6AD87570D2C58C",
+                "filename": "ShieldMgr-x86.efi,shdloader.efi",
+                "description": "",
+                "companyName": "New Horizon Datasys Inc",
+                "dateOfAddition": "2026-07-07",
+                "signingAuthority": "CN = Microsoft Corporation UEFI CA 2011"
+            },
+            {
+                "authenticodeHash": "27E20111CCFBC2D64835DD6E4FA1E53F3DC2FEE2F6013E8A6CD822026E6D2FA1",
+                "hashType": "SHA256",
+                "flatHash": "0FAFF8D16E102264203FA65FE8A3FDF27E002184382F675C115D1485DA0FCD29",
+                "filename": "shdloader-x86.efi",
+                "description": "",
+                "companyName": "EAZ Solution Inc",
+                "dateOfAddition": "2026-07-07",
                 "signingAuthority": "CN = Microsoft Corporation UEFI CA 2011"
             }
         ],
