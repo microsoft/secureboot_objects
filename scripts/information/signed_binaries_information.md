@@ -31,6 +31,22 @@ Background:
     - These binaries are the most compatible with the most systems consult the
     `PreSignedObjects\DBX\dbx_info_msft_<date>.json` file for more information.
 
+## edk2-2023-signed-secureboot-binaries
+
+[!IMPORTANT]
+Background:
+    - These binaries are signed with a leaf certificate of the Microsoft Corporation KEK CA 2023.
+    - These binaries should be used for systems that trust the Microsoft Corporation KEK CA 2023 certificate.
+    - These binaries hashes are broken up by architecture
+        - X64
+        - Ia32
+        - Arm
+        - Aarch64
+    - Purely hash based revocations. These do not contain the 2011 Windows CA nor do they contain SVNs.
+    - These binaries carry the same DBX revocations as the `edk2-2011-signed-secureboot-binaries`, but
+    are signed with the 2023 KEK for systems that have transitioned to it. Consult the
+    `PreSignedObjects\DBX\dbx_info_msft_<date>.json` file for more information.
+
 ## edk2-2011-optional-signed-secureboot-binaries
 
 [!IMPORTANT]

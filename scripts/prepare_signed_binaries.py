@@ -18,8 +18,9 @@ INFORMATION = (pathlib.Path(__file__).parent / "information" / "signed_binaries_
 LICENSE = (pathlib.Path(__file__).parent.parent / "License.txt").read_text()
 
 LAYOUT = {
-    "edk2-2011-signed-secureboot-binaries": "DBX",
-    "edk2-2011-optional-signed-secureboot-binaries": "Optional",
+    "edk2-2011-signed-secureboot-binaries": ["SignedByKEK2011"],
+    "edk2-2023-signed-secureboot-binaries": ["SignedByKEK2023"],
+    "edk2-2011-optional-signed-secureboot-binaries": ["Optional"],
 }
 
 def main() -> int:
@@ -50,18 +51,25 @@ def main() -> int:
     readme_path = out_path / "README.md"
     readme_path.write_text(readme)
 
-    for name, arch in LAYOUT.items():
+    for name, sources in LAYOUT.items():
         tmp_dir = tempfile.TemporaryDirectory()
-        pathlib.Path(tmp_dir.name, "version").write_text(args.version)
-        if not (in_path / arch).exists():
-            raise RuntimeError(f"Missing {arch} directory in {in_path}")
-        shutil.copytree(in_path / arch, pathlib.Path(tmp_dir.name), dirs_exist_ok=True)
-
         tmp_path = pathlib.Path(tmp_dir.name)
-        for bin_file in tmp_path.rglob("*.bin"):
-            receipt = get_signed_payload_receipt(bin_file)
+        (tmp_path / "version").write_text(args.version)
+
+        for source in sources:
+            source_path = in_path / source
+            if not source_path.exists():
+                raise RuntimeError(f"Missing {source} directory in {in_path}")
+            # When an archive draws from a single source directory, its contents are
+            # placed at the archive root. When it aggregates multiple source directories,
+            # each is preserved under its own subfolder to keep them distinct.
+            destination = tmp_path if len(sources) == 1 else tmp_path / source
+            shutil.copytree(source_path, destination, dirs_exist_ok=True)
+
+        for signed_file in (*tmp_path.rglob("*.bin"), *tmp_path.rglob("*.efiauth2")):
+            receipt = get_signed_payload_receipt(signed_file)
             receipt_json = json.dumps(receipt, indent=4)
-            receipt_path = bin_file.with_suffix('.json')
+            receipt_path = signed_file.with_suffix('.json')
             receipt_path.write_text(receipt_json)
 
         shutil.make_archive(out_path / name, "zip", tmp_dir.name)
