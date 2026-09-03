@@ -3823,7 +3823,15 @@
             "issued_by": "CN=VAIO Platform Key,O=VAIO Corporation,L=Azumino-shi,ST=Nagano,C=JP"
         }
     },
-    "5439db10dc3638787b4029dca206b140b06df1cd": {
+    "815c44daf9858f0f7971cd2d557791e509c55eb4": {
+        "KEKUpdate": "weibu/KEKUpdate_Acer_PK815C44D.bin",
+        "Certificate": {
+            "serial_number": "3235b5b3332970ba404d95508f20c5c8",
+            "issued_to": "CN=WEIBU Information Inc",
+            "issued_by": "CN=WEIBU Information Inc"
+        }
+    },
+     "5439db10dc3638787b4029dca206b140b06df1cd": {
         "KEKUpdate": "Wingtech/KEKUpdate_Wingtech_PK1.bin",
         "Certificate": {
             "serial_number": "c54c15433ae707a444ab3aab3218adba",
