@@ -158,20 +158,42 @@ def process_single_file(file_path: str, save_der: bool = True) -> None:
         logging.error(f"Error processing {file_path}: {e}")
 
 
-def process_directory(directory_path: str, output_json: str) -> None:
-    """Process all .bin files in a directory and create a JSON mapping."""
+def process_directory(directory_path: str, output_json: str, sort_output: bool = False) -> None:
+    """Process all .bin files in a directory and create/update a JSON mapping.
+
+    Args:
+        directory_path: Path to directory containing .bin files
+        output_json: Output JSON file path
+        sort_output: If True, sort entries alphabetically by KEKUpdate path
+                    If False (default), use incremental mode - only add new entries
+    """
     directory = Path(directory_path)
 
     if not directory.is_dir():
         raise ValueError(f"'{directory_path}' is not a valid directory")
 
-    results = {}
+    # Load existing map if it exists (for incremental mode)
+    existing_map = {}
+    existing_keys = set()
+    if Path(output_json).exists() and not sort_output:
+        try:
+            with open(output_json, "r", encoding="utf-8") as f:
+                existing_map = json.load(f)
+                existing_keys = set(existing_map.keys())
+            logging.info(f"Loaded existing map with {len(existing_map)} entries")
+        except Exception as e:
+            logging.warning(f"Failed to load existing map: {e}. Starting fresh.")
+
+    results = existing_map.copy() if not sort_output else {}
 
     # Find all .bin files recursively
     bin_files = list(directory.rglob("*.bin"))
     logging.info(f"Found {len(bin_files)} .bin files to process")
 
     bin_files.sort()
+    processed_count = 0
+    skipped_count = 0
+
     for bin_file in bin_files:
         try:
             certificate, sha1_thumb, _ = process_auth_file(str(bin_file))
@@ -182,6 +204,12 @@ def process_directory(directory_path: str, output_json: str) -> None:
             # Use SHA1 thumbprint as key (matching kek_update_map.json format)
             key = sha1_thumb.hex()
 
+            # In incremental mode, skip if already in map
+            if not sort_output and key in existing_keys:
+                logging.debug(f"Skipped (already exists): {relative_path}")
+                skipped_count += 1
+                continue
+
             cert_info = get_certificate_info(certificate)
 
             results[key] = {
@@ -190,6 +218,7 @@ def process_directory(directory_path: str, output_json: str) -> None:
             }
 
             logging.info(f"Processed: {relative_path}")
+            processed_count += 1
 
         except Exception as e:
             try:
@@ -199,12 +228,25 @@ def process_directory(directory_path: str, output_json: str) -> None:
                 logging.warning(f"Failed to process {bin_file}: {e}")
             continue
 
+    # Sort by KEKUpdate path if requested
+    if sort_output:
+        sorted_results = {}
+        for key in sorted(results.keys(),
+                         key=lambda k: results[k]['KEKUpdate']):
+            sorted_results[key] = results[key]
+        results = sorted_results
+        logging.info("Sorted results alphabetically by KEKUpdate path")
+
     # Write results to JSON file with Unicode characters preserved
     with open(output_json, "w", encoding="utf-8") as f:
         json.dump(results, f, indent=4, ensure_ascii=False)
 
     logging.info(f"JSON mapping saved to '{output_json}'")
-    logging.info(f"Successfully processed {len(results)} files")
+    if sort_output:
+        logging.info(f"Successfully processed {len(results)} files (sort mode)")
+    else:
+        logging.info(f"Successfully processed {processed_count} new files, skipped {skipped_count} existing")
+
 
 
 def main() -> None:
@@ -228,6 +270,10 @@ Examples:
     parser.add_argument("path", nargs="?", help="Path to the authenticated file")
     parser.add_argument("--directory", "-d", help="Process all .bin files in directory")
     parser.add_argument("--output", "-o", help="Output JSON file for directory mode", default=None)
+    parser.add_argument("--sort", "-s", action="store_true",
+                       help="Sort entries alphabetically by KEKUpdate path. "
+                            "By default (without this flag), uses incremental mode which "
+                            "only adds new entries and preserves existing order.")
     args = parser.parse_args()
 
     if args.directory:
@@ -237,7 +283,7 @@ Examples:
             args.output = os.path.join(args.directory, "kek_update_map.json")
 
         try:
-            process_directory(args.directory, args.output)
+            process_directory(args.directory, args.output, args.sort)
         except Exception as e:
             logging.error(f"Error: {e}")
     elif args.path:
