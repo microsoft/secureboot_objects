@@ -909,8 +909,6 @@ function Copy-2023BootBins {
         $bootStlDest = $global:Temp_Media_To_Update_Path + "\EFI\Microsoft\Boot\boot.stl"
         if (-not (Test-Path -Path $bootStlSource)) {
             Write-Dbg-Host "[boot.stl] not found in mounted boot.wim at [$bootStlSource]. Skipping."
-        } elseif (Test-Path -Path $bootStlDest) {
-            Write-Dbg-Host "[boot.stl] already exists at [$bootStlDest]. Preserving existing file."
         } else {
             Write-Dbg-Host "Copying [$bootStlSource] to [$bootStlDest]"
             Copy-Item -Path $bootStlSource -Destination $bootStlDest -Force -ErrorAction stop | Out-Null
