@@ -23,6 +23,16 @@ LAYOUT = {
     "edk2-2011-optional-signed-secureboot-binaries": ["Optional"],
 }
 
+SIGNED_BINARY_SUFFIXES = {".bin", ".efiauth2"}
+
+
+def iter_signed_files(root: pathlib.Path):
+    """Yield signed binary artifacts under a root directory with a single tree walk."""
+    for file_path in root.rglob("*"):
+        if file_path.is_file() and file_path.suffix.lower() in SIGNED_BINARY_SUFFIXES:
+            yield file_path
+
+
 def main() -> int:
     """Entry point for the script."""
     parser = argparse.ArgumentParser(
@@ -66,7 +76,7 @@ def main() -> int:
             destination = tmp_path if len(sources) == 1 else tmp_path / source
             shutil.copytree(source_path, destination, dirs_exist_ok=True)
 
-        for signed_file in (*tmp_path.rglob("*.bin"), *tmp_path.rglob("*.efiauth2")):
+        for signed_file in iter_signed_files(tmp_path):
             receipt = get_signed_payload_receipt(signed_file)
             receipt_json = json.dumps(receipt, indent=4)
             receipt_path = signed_file.with_suffix('.json')

@@ -11,7 +11,26 @@ import json
 import pathlib
 import tempfile
 
+from prepare_signed_binaries import iter_signed_files
 from utility_functions import get_latest_revocation_list
+
+
+def test_iter_signed_files() -> None:
+    """Ensure signed binary discovery walks the tree once and filters suffixes."""
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_path = pathlib.Path(temp_dir)
+        expected = [
+            temp_path / "root.bin",
+            temp_path / "nested" / "child.efiauth2",
+        ]
+        for path in expected:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.touch()
+
+        (temp_path / "ignore.txt").write_text("skip")
+        (temp_path / "nested" / "other.json").write_text("skip")
+
+        assert sorted(iter_signed_files(temp_path), key=lambda p: str(p)) == sorted(expected, key=lambda p: str(p))
 
 
 def test_get_latest_revocation_list() -> None:
