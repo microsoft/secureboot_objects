@@ -139,8 +139,20 @@ def get_latest_revocation_list(path: pathlib.Path) -> pathlib.Path:
     if not json_files:
         raise FileNotFoundError("No JSON files found in the specified directory.")
 
-    latest_file = max(json_files, key=lambda f: list(map(int, f.stem.split("_")[-3:])))
-    return latest_file
+    versioned_files = []
+    for json_file in json_files:
+        parts = json_file.stem.split("_")
+        if len(parts) < 3:
+            continue
+
+        version_parts = parts[-3:]
+        if all(part.isdigit() for part in version_parts):
+            versioned_files.append((tuple(int(part) for part in version_parts), json_file))
+
+    if not versioned_files:
+        raise FileNotFoundError("No JSON files found in the specified directory.")
+
+    return max(versioned_files, key=lambda item: item[0])[1]
 
 
 def describe_signature_list(signature_database: EfiSignatureDatabase) -> list:

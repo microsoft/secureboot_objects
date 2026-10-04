@@ -12,6 +12,7 @@ import json
 import logging
 import os
 import pathlib
+import re
 import uuid
 from pathlib import Path
 from tempfile import TemporaryFile
@@ -36,42 +37,54 @@ IMAGING_INFORMATION = (pathlib.Path(__file__).parent / "information" / "imaging_
 LICENSE = (pathlib.Path(__file__).parent.parent / "License.txt").read_text()
 
 def _is_pem_encoded(certificate_data: Union[str, bytes]) -> bool:
-    """This function is used to check if a certificate is pem encoded (base64 encoded).
-
-    Args:
-        certificate_data (str | bytes): The certificate to check.
-
-    Returns:
-        bool: True if the certificate is pem encoded, False otherwise.
-    """
+    """Return True when the input contains PEM-wrapped base64 content."""
     try:
         if isinstance(certificate_data, str):
-            # If there's any unicode here, an exception will be thrown and the function will return false
-            sb_bytes = bytes(certificate_data, "ascii")
+            text = certificate_data
         elif isinstance(certificate_data, bytes):
-            sb_bytes = certificate_data
+            text = certificate_data.decode("ascii", errors="strict")
         else:
             raise ValueError("Argument must be string or bytes")
 
-        return base64.b64encode(base64.b64decode(sb_bytes)) == sb_bytes
-    except Exception:
+        if "-----BEGIN " in text and "-----END " in text:
+            return True
+
+        normalized = "".join(text.split())
+        if not normalized:
+            return False
+
+        try:
+            decoded = base64.b64decode(normalized, validate=True)
+        except (ValueError, TypeError):
+            return False
+        return base64.b64encode(decoded) == normalized.encode("ascii")
+    except (UnicodeDecodeError, ValueError, TypeError):
         return False
 
 
 def _convert_pem_to_der(certificate_data: Union[str, bytes]) -> bytes:
-    """This function is used to convert a pem encoded certificate to a der encoded certificate.
-
-    Args:
-        certificate_data: The certificate to convert.
-
-    Returns:
-        bytes: The der encoded certificate.
-    """
+    """Convert PEM-encoded certificate text to DER-encoded certificate bytes."""
     if isinstance(certificate_data, str):
-        # If there's any unicode here, an exception will be thrown and the function will return false
-        certificate_data = bytes(certificate_data, "ascii")
+        text = certificate_data
+    elif isinstance(certificate_data, bytes):
+        text = certificate_data.decode("ascii", errors="strict")
+    else:
+        raise ValueError("Argument must be string or bytes")
 
-    return base64.b64decode(certificate_data)
+    pem_match = re.search(r"-----BEGIN [^-]+-----\s*(.*?)\s*-----END [^-]+-----", text, re.DOTALL)
+    if pem_match:
+        text = pem_match.group(1)
+
+    normalized = "".join(text.split())
+    if not normalized:
+        raise ValueError("No certificate data found in PEM input")
+
+    try:
+        return base64.b64decode(normalized, validate=True)
+    except ValueError:
+        if "-----BEGIN " in text or "-----END " in text:
+            raise ValueError("Invalid PEM certificate data")
+        raise
 
 
 def _invalid_file(file: str, **kwargs: any) -> None:
@@ -341,8 +354,10 @@ def build_default_keys(keystore: dict) -> dict:
 
     # Add handlers here for different file types.
     file_handler = {
+        ".cer": _convert_crt_to_signature_list,
         ".crt": _convert_crt_to_signature_list,
         ".der": _convert_crt_to_signature_list,  # DER is just a more specific certificate format than CRT
+        ".pem": _convert_crt_to_signature_list,
         ".csv": _convert_csv_to_signature_list,
         ".empty": _convert_empty_to_signature_list,
         ".json": _convert_json_to_signature_list,
