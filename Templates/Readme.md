@@ -27,6 +27,17 @@ tbs_hash = "sha512"
 This emits the V1 `EFI_CERT_X509_SHA*` form, including `SignatureOwner` and a
 zero `TimeOfRevocation`.
 
+Set `signature_list_version = 2` to emit the UEFI 2.12
+`EFI_CERT_V2_X509_SHA*` form. V2 entries contain only the digest and therefore
+do not require a `signature_owner`:
+
+```toml
+[[DefaultDb.files]]
+path = "PreSignedObjects/DB/Certificates/Example.der"
+tbs_hash = "sha512"
+signature_list_version = 2
+```
+
 ```c
   #pragma pack(1)
 

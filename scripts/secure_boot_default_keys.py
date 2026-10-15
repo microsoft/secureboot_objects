@@ -17,7 +17,7 @@ import struct
 import uuid
 from pathlib import Path
 from tempfile import TemporaryFile
-from typing import Union
+from typing import Optional, Union
 
 from cryptography import x509
 from edk2toollib.uefi.authenticated_variables_structure_support import (
@@ -38,6 +38,12 @@ X509_TBS_HASH_GUIDS = {
     "sha256": uuid.UUID("3bd2a492-96c0-4079-b420-fcf98ef103ed"),
     "sha384": uuid.UUID("7076876e-80c2-4ee6-aad2-28b349a6865b"),
     "sha512": uuid.UUID("446dbf63-2502-4cda-bcfa-2465d2b0fe9d"),
+}
+
+X509_TBS_HASH_V2_GUIDS = {
+    "sha256": uuid.UUID("af4d21cd-7627-4b81-9e96-d4f3bbc3fae9"),
+    "sha384": uuid.UUID("78860e15-f2eb-4d16-8156-231518fb7688"),
+    "sha512": uuid.UUID("4d46147a-fa79-43a9-8836-00341c708a70"),
 }
 
 FIRMWARE_INFORMATION = (pathlib.Path(__file__).parent / "information" / "firmware_defaults_information.md").read_text()
@@ -93,6 +99,8 @@ def _invalid_file(file: str, **kwargs: any) -> None:
     Optional Args:
         **kwargs: Set tbs_hash to sha256, sha384, or sha512 to emit a
             TBSCertificate hash signature list instead of the full certificate.
+            Set signature_list_version to 2 to omit SignatureOwner and
+            TimeOfRevocation.
 
     Raises:
         ValueError: If the file is invalid, raise a ValueError.
@@ -146,6 +154,7 @@ def _convert_crt_to_signature_list(file: str, signature_owner: str, **kwargs: an
                 crt_file.read(),
                 signature_owner,
                 tbs_hash,
+                kwargs.get("signature_list_version", 1),
             )
 
     if signature_owner is not None and not isinstance(signature_owner, uuid.UUID):
@@ -172,15 +181,19 @@ def _convert_crt_to_signature_list(file: str, signature_owner: str, **kwargs: an
 
 def create_x509_tbs_hash_signature_list(
     certificate_data: bytes,
-    signature_owner: Union[str, uuid.UUID],
+    signature_owner: Optional[Union[str, uuid.UUID]],
     hash_algorithm: str,
+    signature_list_version: int = 1,
 ) -> bytes:
-    """Create a V1 X.509 TBSCertificate hash EFI signature list.
+    """Create an X.509 TBSCertificate hash EFI signature list.
 
     Args:
         certificate_data: DER, PEM, or base64-encoded DER X.509 certificate.
-        signature_owner: SignatureOwner GUID for the V1 EFI_SIGNATURE_DATA.
+        signature_owner: SignatureOwner GUID for a V1 EFI_SIGNATURE_DATA.
+            Ignored for V2.
         hash_algorithm: SHA-256, SHA-384, or SHA-512.
+        signature_list_version: 1 for EFI_SIGNATURE_DATA or 2 for
+            EFI_SIGNATURE_V2_DATA.
 
     Returns:
         The encoded EFI_SIGNATURE_LIST.
@@ -189,12 +202,15 @@ def create_x509_tbs_hash_signature_list(
         ValueError: The hash algorithm or certificate encoding is unsupported.
     """
     normalized_hash = hash_algorithm.lower().replace("-", "")
-    signature_type = X509_TBS_HASH_GUIDS.get(normalized_hash)
+    if signature_list_version == 1:
+        signature_type = X509_TBS_HASH_GUIDS.get(normalized_hash)
+    elif signature_list_version == 2:
+        signature_type = X509_TBS_HASH_V2_GUIDS.get(normalized_hash)
+    else:
+        raise ValueError(f"Unsupported EFI signature list version: {signature_list_version}")
+
     if signature_type is None:
         raise ValueError(f"Unsupported X.509 TBS hash algorithm: {hash_algorithm}")
-
-    if not isinstance(signature_owner, uuid.UUID):
-        signature_owner = uuid.UUID(signature_owner)
 
     if certificate_data.startswith(b"-----BEGIN CERTIFICATE-----"):
         certificate = x509.load_pem_x509_certificate(certificate_data)
@@ -204,8 +220,15 @@ def create_x509_tbs_hash_signature_list(
         certificate = x509.load_der_x509_certificate(certificate_data)
 
     digest = hashlib.new(normalized_hash, certificate.tbs_certificate_bytes).digest()
-    time_of_revocation = bytes(16)
-    signature_data = signature_owner.bytes_le + digest + time_of_revocation
+    if signature_list_version == 1:
+        if signature_owner is None:
+            raise ValueError("V1 X.509 TBS hash entries require a SignatureOwner")
+        if not isinstance(signature_owner, uuid.UUID):
+            signature_owner = uuid.UUID(signature_owner)
+        signature_data = signature_owner.bytes_le + digest + bytes(16)
+    else:
+        signature_data = digest
+
     signature_list_size = EfiSignatureList.STATIC_STRUCT_SIZE + len(signature_data)
 
     return (
@@ -437,7 +460,14 @@ def build_default_keys(keystore: dict) -> dict:
                 file_ext = file_path.suffix.lower()
 
                 signature_owner = file_dict.get("signature_owner", None)
-                if signature_owner is None:
+                signature_list_version = file_dict.get("signature_list_version", 1)
+                if (
+                    signature_owner is None
+                    and not (
+                        file_dict.get("tbs_hash") is not None
+                        and signature_list_version == 2
+                    )
+                ):
                     signature_owner = INSTANCE_SIGNATURE_OWNER
                     logging.warning(
                         "No signature owner provided for %s. Using random signature owner %s.",
@@ -458,6 +488,7 @@ def build_default_keys(keystore: dict) -> dict:
                     signature_owner=signature_owner,
                     target_arch=arch,
                     tbs_hash=file_dict.get("tbs_hash"),
+                    signature_list_version=signature_list_version,
                 )
 
                 logging.info("Appended %s to signature database for variable %s.", file_path, variable)
