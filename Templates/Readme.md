@@ -13,6 +13,20 @@ Each entry must have a "SignatureOwner" GUID. While the GUID is not required to 
 the Microsoft HLK test will fail if the GUID overlaps with the Microsoft GUID.
 It is recommended to use your own GUID for the SignatureOwner.
 
+To place an X.509 certificate's TBSCertificate hash in a database, add
+`tbs_hash` to that certificate's file entry. Supported values are `sha256`,
+`sha384`, and `sha512`:
+
+```toml
+[[DefaultDb.files]]
+path = "PreSignedObjects/DB/Certificates/Example.der"
+signature_owner = "00000000-0000-0000-0000-000000000000"
+tbs_hash = "sha512"
+```
+
+This emits the V1 `EFI_CERT_X509_SHA*` form, including `SignatureOwner` and a
+zero `TimeOfRevocation`.
+
 ```c
   #pragma pack(1)
 

@@ -7,16 +7,19 @@
 import base64
 import csv
 import datetime
+import hashlib
 import io
 import json
 import logging
 import os
 import pathlib
+import struct
 import uuid
 from pathlib import Path
 from tempfile import TemporaryFile
 from typing import Union
 
+from cryptography import x509
 from edk2toollib.uefi.authenticated_variables_structure_support import (
     EfiSignatureDataEfiCertSha256,
     EfiSignatureDataEfiCertX509,
@@ -31,9 +34,16 @@ INSTANCE_SIGNATURE_OWNER = str(uuid.uuid4())
 
 ARCH_MAP = {"64-bit": "x64", "32-bit": "ia32", "32-bit ARM": "arm", "64-bit ARM": "aarch64"}
 
+X509_TBS_HASH_GUIDS = {
+    "sha256": uuid.UUID("3bd2a492-96c0-4079-b420-fcf98ef103ed"),
+    "sha384": uuid.UUID("7076876e-80c2-4ee6-aad2-28b349a6865b"),
+    "sha512": uuid.UUID("446dbf63-2502-4cda-bcfa-2465d2b0fe9d"),
+}
+
 FIRMWARE_INFORMATION = (pathlib.Path(__file__).parent / "information" / "firmware_defaults_information.md").read_text()
 IMAGING_INFORMATION = (pathlib.Path(__file__).parent / "information" / "imaging_binaries_information.md").read_text()
 LICENSE = (pathlib.Path(__file__).parent.parent / "License.txt").read_text()
+
 
 def _is_pem_encoded(certificate_data: Union[str, bytes]) -> bool:
     """This function is used to check if a certificate is pem encoded (base64 encoded).
@@ -81,7 +91,8 @@ def _invalid_file(file: str, **kwargs: any) -> None:
         file: The path to the file
 
     Optional Args:
-        **kwargs: Additional arguments to be passed to the function (These will be intentionally ignored)
+        **kwargs: Set tbs_hash to sha256, sha384, or sha512 to emit a
+            TBSCertificate hash signature list instead of the full certificate.
 
     Raises:
         ValueError: If the file is invalid, raise a ValueError.
@@ -128,6 +139,15 @@ def _convert_crt_to_signature_list(file: str, signature_owner: str, **kwargs: an
     Returns:
         bytes: The signature list
     """
+    tbs_hash = kwargs.get("tbs_hash")
+    if tbs_hash is not None:
+        with open(file, "rb") as crt_file:
+            return create_x509_tbs_hash_signature_list(
+                crt_file.read(),
+                signature_owner,
+                tbs_hash,
+            )
+
     if signature_owner is not None and not isinstance(signature_owner, uuid.UUID):
         signature_owner = uuid.UUID(signature_owner)
 
@@ -148,6 +168,56 @@ def _convert_crt_to_signature_list(file: str, signature_owner: str, **kwargs: an
         siglist.AddSignatureData(sigdata)
 
     return siglist.encode()
+
+
+def create_x509_tbs_hash_signature_list(
+    certificate_data: bytes,
+    signature_owner: Union[str, uuid.UUID],
+    hash_algorithm: str,
+) -> bytes:
+    """Create a V1 X.509 TBSCertificate hash EFI signature list.
+
+    Args:
+        certificate_data: DER, PEM, or base64-encoded DER X.509 certificate.
+        signature_owner: SignatureOwner GUID for the V1 EFI_SIGNATURE_DATA.
+        hash_algorithm: SHA-256, SHA-384, or SHA-512.
+
+    Returns:
+        The encoded EFI_SIGNATURE_LIST.
+
+    Raises:
+        ValueError: The hash algorithm or certificate encoding is unsupported.
+    """
+    normalized_hash = hash_algorithm.lower().replace("-", "")
+    signature_type = X509_TBS_HASH_GUIDS.get(normalized_hash)
+    if signature_type is None:
+        raise ValueError(f"Unsupported X.509 TBS hash algorithm: {hash_algorithm}")
+
+    if not isinstance(signature_owner, uuid.UUID):
+        signature_owner = uuid.UUID(signature_owner)
+
+    if certificate_data.startswith(b"-----BEGIN CERTIFICATE-----"):
+        certificate = x509.load_pem_x509_certificate(certificate_data)
+    else:
+        if _is_pem_encoded(certificate_data):
+            certificate_data = _convert_pem_to_der(certificate_data)
+        certificate = x509.load_der_x509_certificate(certificate_data)
+
+    digest = hashlib.new(normalized_hash, certificate.tbs_certificate_bytes).digest()
+    time_of_revocation = bytes(16)
+    signature_data = signature_owner.bytes_le + digest + time_of_revocation
+    signature_list_size = EfiSignatureList.STATIC_STRUCT_SIZE + len(signature_data)
+
+    return (
+        signature_type.bytes_le
+        + struct.pack(
+            "<III",
+            signature_list_size,
+            0,
+            len(signature_data),
+        )
+        + signature_data
+    )
 
 
 def _convert_csv_to_signature_list(file: str, signature_owner: str, target_arch: str = None, **kwargs: any) -> bytes:
@@ -383,7 +453,12 @@ def build_default_keys(keystore: dict) -> dict:
 
                 logging.info("Converting %s to signature list.", file_path)
 
-                signature_database += convert_handler(file=file_path, signature_owner=signature_owner, target_arch=arch)
+                signature_database += convert_handler(
+                    file=file_path,
+                    signature_owner=signature_owner,
+                    target_arch=arch,
+                    tbs_hash=file_dict.get("tbs_hash"),
+                )
 
                 logging.info("Appended %s to signature database for variable %s.", file_path, variable)
 
