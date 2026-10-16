@@ -4,6 +4,7 @@
 # SPDX-License-Identifier: BSD-2-Clause-Patent
 ##
 """A command line script used to build the authenticated variable structures for Secureboot."""
+
 import base64
 import csv
 import datetime
@@ -20,8 +21,8 @@ from tempfile import TemporaryFile
 from typing import Optional, Union
 
 from cryptography import x509
+from cryptography.hazmat.primitives.serialization import Encoding
 from edk2toollib.uefi.authenticated_variables_structure_support import (
-    EfiSignatureDataEfiCertSha256,
     EfiSignatureDataEfiCertX509,
     EfiSignatureDataFactory,
     EfiSignatureList,
@@ -38,13 +39,31 @@ X509_TBS_HASH_GUIDS = {
     "sha256": uuid.UUID("3bd2a492-96c0-4079-b420-fcf98ef103ed"),
     "sha384": uuid.UUID("7076876e-80c2-4ee6-aad2-28b349a6865b"),
     "sha512": uuid.UUID("446dbf63-2502-4cda-bcfa-2465d2b0fe9d"),
+    "sm3": uuid.UUID("60d807e5-10b4-49a9-9331-e40437888d37"),
 }
 
 X509_TBS_HASH_V2_GUIDS = {
     "sha256": uuid.UUID("af4d21cd-7627-4b81-9e96-d4f3bbc3fae9"),
     "sha384": uuid.UUID("78860e15-f2eb-4d16-8156-231518fb7688"),
     "sha512": uuid.UUID("4d46147a-fa79-43a9-8836-00341c708a70"),
+    "sm3": uuid.UUID("a3a48dce-8de4-4634-9194-95bf8d7442bc"),
 }
+
+HASH_GUIDS = {
+    "sha256": uuid.UUID("c1c41626-504c-4092-aca9-41f936934328"),
+    "sha384": uuid.UUID("ff3e5307-9fd0-48c9-85f1-8ad56c701e01"),
+    "sha512": uuid.UUID("093e0fae-a6c4-4f50-9f1b-d41e2b89c19a"),
+    "sm3": uuid.UUID("57347f87-7a9b-403a-b93c-dc4afb7a0ebc"),
+}
+
+HASH_V2_GUIDS = {
+    "sha256": uuid.UUID("65325437-ca92-441e-943d-4e003faeda97"),
+    "sha384": uuid.UUID("45db3553-f9a6-4026-8e48-eb1e4b07185c"),
+    "sha512": uuid.UUID("d2291d97-f066-4abf-9c57-6363e5fd6903"),
+    "sm3": uuid.UUID("ee4df27a-deca-4312-a3ae-65f8a1d8f992"),
+}
+
+X509_V2_GUID = uuid.UUID("79518039-4715-4393-bdf8-d8e3c67fbac7")
 
 FIRMWARE_INFORMATION = (pathlib.Path(__file__).parent / "information" / "firmware_defaults_information.md").read_text()
 IMAGING_INFORMATION = (pathlib.Path(__file__).parent / "information" / "imaging_binaries_information.md").read_text()
@@ -148,14 +167,23 @@ def _convert_crt_to_signature_list(file: str, signature_owner: str, **kwargs: an
         bytes: The signature list
     """
     tbs_hash = kwargs.get("tbs_hash")
+    signature_list_version = kwargs.get("signature_list_version", 1)
     if tbs_hash is not None:
         with open(file, "rb") as crt_file:
             return create_x509_tbs_hash_signature_list(
                 crt_file.read(),
                 signature_owner,
                 tbs_hash,
-                kwargs.get("signature_list_version", 1),
+                signature_list_version,
             )
+
+    if signature_list_version == 2:
+        with open(file, "rb") as crt_file:
+            certificate = _load_x509_certificate(crt_file.read())
+        certificate_der = certificate.public_bytes(Encoding.DER)
+        return _encode_signature_list(X509_V2_GUID, [certificate_der])
+    if signature_list_version != 1:
+        raise ValueError(f"Unsupported EFI signature list version: {signature_list_version}")
 
     if signature_owner is not None and not isinstance(signature_owner, uuid.UUID):
         signature_owner = uuid.UUID(signature_owner)
@@ -179,6 +207,70 @@ def _convert_crt_to_signature_list(file: str, signature_owner: str, **kwargs: an
     return siglist.encode()
 
 
+def _load_x509_certificate(certificate_data: bytes) -> x509.Certificate:
+    """Load a DER, PEM, or base64-encoded DER X.509 certificate."""
+    if certificate_data.startswith(b"-----BEGIN CERTIFICATE-----"):
+        return x509.load_pem_x509_certificate(certificate_data)
+    if _is_pem_encoded(certificate_data):
+        certificate_data = _convert_pem_to_der(certificate_data)
+    return x509.load_der_x509_certificate(certificate_data)
+
+
+def _encode_signature_list(
+    signature_type: uuid.UUID,
+    signature_data: list[bytes],
+    signature_size: Optional[int] = None,
+) -> bytes:
+    """Encode entries of one size into an EFI_SIGNATURE_LIST."""
+    if signature_size is None:
+        if not signature_data:
+            raise ValueError("Signature data must not be empty when SignatureSize is not provided")
+        signature_size = len(signature_data[0])
+    if any(len(entry) != signature_size for entry in signature_data):
+        raise ValueError("All EFI signature list entries must have the same size")
+
+    signature_list_size = EfiSignatureList.STATIC_STRUCT_SIZE + (signature_size * len(signature_data))
+    return (
+        signature_type.bytes_le + struct.pack("<III", signature_list_size, 0, signature_size) + b"".join(signature_data)
+    )
+
+
+def create_hash_signature_list(
+    signature_hashes: list[bytes],
+    signature_owner: Optional[Union[str, uuid.UUID]],
+    hash_algorithm: str,
+    signature_list_version: int = 1,
+) -> bytes:
+    """Create a raw hash EFI signature list."""
+    normalized_hash = hash_algorithm.lower().replace("-", "")
+    try:
+        digest_size = hashlib.new(normalized_hash).digest_size
+    except ValueError as exception:
+        raise ValueError(f"Unsupported hash algorithm: {hash_algorithm}") from exception
+
+    if signature_list_version == 1:
+        signature_type = HASH_GUIDS.get(normalized_hash)
+        if signature_owner is None:
+            raise ValueError("V1 hash entries require a SignatureOwner")
+        if not isinstance(signature_owner, uuid.UUID):
+            signature_owner = uuid.UUID(signature_owner)
+        entries = [signature_owner.bytes_le + signature_hash for signature_hash in signature_hashes]
+        signature_size = 16 + digest_size
+    elif signature_list_version == 2:
+        signature_type = HASH_V2_GUIDS.get(normalized_hash)
+        entries = signature_hashes
+        signature_size = digest_size
+    else:
+        raise ValueError(f"Unsupported EFI signature list version: {signature_list_version}")
+
+    if signature_type is None:
+        raise ValueError(f"Unsupported hash algorithm: {hash_algorithm}")
+    if any(len(signature_hash) != digest_size for signature_hash in signature_hashes):
+        raise ValueError(f"Invalid {hash_algorithm} hash size")
+
+    return _encode_signature_list(signature_type, entries, signature_size)
+
+
 def create_x509_tbs_hash_signature_list(
     certificate_data: bytes,
     signature_owner: Optional[Union[str, uuid.UUID]],
@@ -191,7 +283,7 @@ def create_x509_tbs_hash_signature_list(
         certificate_data: DER, PEM, or base64-encoded DER X.509 certificate.
         signature_owner: SignatureOwner GUID for a V1 EFI_SIGNATURE_DATA.
             Ignored for V2.
-        hash_algorithm: SHA-256, SHA-384, or SHA-512.
+        hash_algorithm: SHA-256, SHA-384, SHA-512, or SM3.
         signature_list_version: 1 for EFI_SIGNATURE_DATA or 2 for
             EFI_SIGNATURE_V2_DATA.
 
@@ -212,12 +304,7 @@ def create_x509_tbs_hash_signature_list(
     if signature_type is None:
         raise ValueError(f"Unsupported X.509 TBS hash algorithm: {hash_algorithm}")
 
-    if certificate_data.startswith(b"-----BEGIN CERTIFICATE-----"):
-        certificate = x509.load_pem_x509_certificate(certificate_data)
-    else:
-        if _is_pem_encoded(certificate_data):
-            certificate_data = _convert_pem_to_der(certificate_data)
-        certificate = x509.load_der_x509_certificate(certificate_data)
+    certificate = _load_x509_certificate(certificate_data)
 
     digest = hashlib.new(normalized_hash, certificate.tbs_certificate_bytes).digest()
     if signature_list_version == 1:
@@ -229,18 +316,7 @@ def create_x509_tbs_hash_signature_list(
     else:
         signature_data = digest
 
-    signature_list_size = EfiSignatureList.STATIC_STRUCT_SIZE + len(signature_data)
-
-    return (
-        signature_type.bytes_le
-        + struct.pack(
-            "<III",
-            signature_list_size,
-            0,
-            len(signature_data),
-        )
-        + signature_data
-    )
+    return _encode_signature_list(signature_type, [signature_data])
 
 
 def _convert_csv_to_signature_list(file: str, signature_owner: str, target_arch: str = None, **kwargs: any) -> bytes:
@@ -262,16 +338,11 @@ def _convert_csv_to_signature_list(file: str, signature_owner: str, target_arch:
     Returns:
         bytes: The signature list
     """
-    if signature_owner is not None and not isinstance(signature_owner, uuid.UUID):
-        signature_owner = uuid.UUID(signature_owner)
-
-    siglist = EfiSignatureList(typeguid=EfiSignatureDataFactory.EFI_CERT_SHA256_GUID)
-
+    signature_hashes = []
     with open(file, "r") as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=",")
         for i, row in enumerate(csv_reader):
             if i == 0:
-                siglist.AddSignatureHeader(None, SigSize=EfiSignatureDataEfiCertSha256.STATIC_STRUCT_SIZE)
                 continue
 
             authenticode_hash = row[1]
@@ -283,12 +354,15 @@ def _convert_csv_to_signature_list(file: str, signature_owner: str, target_arch:
                 logging.debug(f"Skipping {architecture} because it is not in the target architectures.")
                 continue
 
-            sigdata = EfiSignatureDataEfiCertSha256(
-                None, None, bytearray.fromhex(authenticode_hash), sigowner=signature_owner
-            )
-            siglist.AddSignatureData(sigdata)
+            signature_hashes.append(bytes.fromhex(authenticode_hash))
 
-    return siglist.encode()
+    return create_hash_signature_list(
+        signature_hashes,
+        signature_owner,
+        "sha256",
+        kwargs.get("signature_list_version", 1),
+    )
+
 
 def _convert_json_to_signature_list(file: str, signature_owner: str, target_arch: str = None, **kwargs: any) -> bytes:
     """Converts a JSON file containing image hashes to an EFI signature list.
@@ -303,7 +377,7 @@ def _convert_json_to_signature_list(file: str, signature_owner: str, target_arch
         bytes: The encoded EFI signature list.
 
     Raises:
-        ValueError: If the hash type in the JSON file is not 'SHA256'.
+        ValueError: If a hash type or hash size in the JSON file is unsupported.
     Example JSON format:
         {
             "images": {
@@ -322,12 +396,7 @@ def _convert_json_to_signature_list(file: str, signature_owner: str, target_arch
             }
         }
     """
-    if signature_owner is not None and not isinstance(signature_owner, uuid.UUID):
-        signature_owner = uuid.UUID(signature_owner)
-
-    siglist = EfiSignatureList(typeguid=EfiSignatureDataFactory.EFI_CERT_SHA256_GUID)
-    siglist.AddSignatureHeader(None, SigSize=EfiSignatureDataEfiCertSha256.STATIC_STRUCT_SIZE)
-
+    signature_hashes = {}
     with open(file, "r") as json_file:
         data = json.load(json_file)
         hashes = data["images"]
@@ -338,19 +407,20 @@ def _convert_json_to_signature_list(file: str, signature_owner: str, target_arch
 
             for hash in hashes[arch]:
                 authenticode_hash = hash["authenticodeHash"]
+                hash_algorithm = hash["hashType"].lower().replace("-", "")
+                signature_hashes.setdefault(hash_algorithm, []).append(bytes.fromhex(authenticode_hash))
 
-                # Check if the hash type is SHA256
-                # This may be expanded in the future to support other hash types
-                if hash["hashType"] != "SHA256":
-                    raise ValueError(f"Invalid hash type: {hash['hashType']}")
+    signature_list_version = kwargs.get("signature_list_version", 1)
+    return b"".join(
+        create_hash_signature_list(
+            hashes,
+            signature_owner,
+            hash_algorithm,
+            signature_list_version,
+        )
+        for hash_algorithm, hashes in signature_hashes.items()
+    )
 
-                sigdata = EfiSignatureDataEfiCertSha256(
-                    None, None, bytearray.fromhex(authenticode_hash), sigowner=signature_owner
-                )
-
-                siglist.AddSignatureData(sigdata)
-
-    return siglist.encode()
 
 def _create_time_based_payload(esl_payload: bytes) -> bytes:
     """This function creates a authenticated variable with an empty signature for the provided payload.
@@ -375,29 +445,47 @@ def _create_time_based_payload(esl_payload: bytes) -> bytes:
     content_set = [0x31, 0x0F]
     #       ANY SEQUENCE (2 elem)
     any_sequence = [
-        0x30, 0x0D,
+        0x30,
+        0x0D,
         # OBJECT IDENTIFIER 2.16.840.1.101.3.4.2.1 (sha-256, NIST Algorithm)
-        0x06, 0x09, 0x60, 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x02, 0x01,
+        0x06,
+        0x09,
+        0x60,
+        0x86,
+        0x48,
+        0x01,
+        0x65,
+        0x03,
+        0x04,
+        0x02,
+        0x01,
         # NULL
-        0x05, 0x00,
+        0x05,
+        0x00,
     ]
     #   SEQUENCE (1 elem)
     sequence = [
-        0x30, 0x0B,
+        0x30,
+        0x0B,
         # OBJECT IDENTIFIER 1.2.840.113549.1.7.1 (data, PKCS #7)
-        0x06, 0x09, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x07, 0x01,
+        0x06,
+        0x09,
+        0x2A,
+        0x86,
+        0x48,
+        0x86,
+        0xF7,
+        0x0D,
+        0x01,
+        0x07,
+        0x01,
     ]
     # SET (0 elements)
     set_empty = [0x31, 0x00]
 
     # Combine all sections
     empty_pkcs7_signature = bytearray(
-        content_info_sequence +
-        content_type_integer +
-        content_set +
-        any_sequence +
-        sequence +
-        set_empty
+        content_info_sequence + content_type_integer + content_set + any_sequence + sequence + set_empty
     )
 
     buffer = io.BytesIO()
@@ -461,13 +549,7 @@ def build_default_keys(keystore: dict) -> dict:
 
                 signature_owner = file_dict.get("signature_owner", None)
                 signature_list_version = file_dict.get("signature_list_version", 1)
-                if (
-                    signature_owner is None
-                    and not (
-                        file_dict.get("tbs_hash") is not None
-                        and signature_list_version == 2
-                    )
-                ):
+                if signature_owner is None and signature_list_version != 2:
                     signature_owner = INSTANCE_SIGNATURE_OWNER
                     logging.warning(
                         "No signature owner provided for %s. Using random signature owner %s.",
@@ -528,7 +610,7 @@ def create_readme(keystore: dict, arch: str) -> str:
 
         for file_dict in value["files"]:
             # Filter out Files not used for the specific architecture
-            if 'arch' in file_dict:
+            if "arch" in file_dict:
                 if file_dict.get("arch", arch) != arch:
                     continue
             else:
@@ -556,6 +638,7 @@ def create_folder(directory: Path) -> None:
     directory.mkdir(exist_ok=True, parents=True)
     directory.touch()
 
+
 def create_binary(file: str, data: bytes) -> None:
     """Creates a binary file.
 
@@ -581,7 +664,6 @@ def main() -> int:
     except Exception:
         import tomllib
 
-
     parser = argparse.ArgumentParser(description="Build the default keys for secure boot.")
     parser.add_argument(
         "--keystore",
@@ -605,7 +687,7 @@ def main() -> int:
         output_folder = Path(args.output)
         create_folder(output_folder)
 
-        template_name = os.path.basename(args.keystore).split('.')[0]
+        template_name = os.path.basename(args.keystore).split(".")[0]
 
         # Build the default key binaries; filters on requested architectures in the configuration file.
         default_keys = build_default_keys(keystore)
@@ -682,7 +764,6 @@ def _split_text_by_length(text: str, max_length: int = 120) -> str:
 
 if __name__ == "__main__":
     import sys
-
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
     sys.exit(main())

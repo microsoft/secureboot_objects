@@ -8,14 +8,24 @@ following https://uefi.org/specs/UEFI/2.9_A/32_Secure_Boot_and_Driver_Signing.ht
 
 ## Technical information
 
-The Signature Lists are used to store the signature database in the UEFI
-Each entry must have a "SignatureOwner" GUID. While the GUID is not required to be unique,
-the Microsoft HLK test will fail if the GUID overlaps with the Microsoft GUID.
-It is recommended to use your own GUID for the SignatureOwner.
+The Signature Lists are used to store the signature database in UEFI. V1
+entries have a `SignatureOwner` GUID. While the GUID is not required to be
+unique, the Microsoft HLK test will fail if the GUID overlaps with the
+Microsoft GUID. It is recommended to use your own GUID for the
+`SignatureOwner`. UEFI 2.12 V2 entries omit `SignatureOwner`.
+
+Set `signature_list_version = 2` on a certificate entry without `tbs_hash` to
+emit an `EFI_CERT_V2_X509_GUID` list containing the DER-encoded certificate:
+
+```toml
+[[DefaultDb.files]]
+path = "PreSignedObjects/DB/Certificates/Example.der"
+signature_list_version = 2
+```
 
 To place an X.509 certificate's TBSCertificate hash in a database, add
 `tbs_hash` to that certificate's file entry. Supported values are `sha256`,
-`sha384`, and `sha512`:
+`sha384`, `sha512`, and `sm3`:
 
 ```toml
 [[DefaultDb.files]]
@@ -38,6 +48,20 @@ tbs_hash = "sha512"
 signature_list_version = 2
 ```
 
+JSON image-hash files support SHA-256, SHA-384, SHA-512, and SM3. Setting
+`signature_list_version = 2` on a JSON file entry emits the corresponding
+`EFI_CERT_V2_SHA*` or `EFI_CERT_V2_SM3_GUID` list without a
+`SignatureOwner`. The same option emits `EFI_CERT_V2_SHA256_GUID` for the
+SHA-256 hashes in a CSV revocation list.
+
+Together, these options support every UEFI 2.12 V2 signature type:
+
+| Payload | Signature types |
+| --- | --- |
+| Raw hash | `EFI_CERT_V2_SHA256_GUID`, `EFI_CERT_V2_SHA384_GUID`, `EFI_CERT_V2_SHA512_GUID`, `EFI_CERT_V2_SM3_GUID` |
+| X.509 certificate | `EFI_CERT_V2_X509_GUID` |
+| X.509 TBSCertificate hash | `EFI_CERT_V2_X509_SHA256_GUID`, `EFI_CERT_V2_X509_SHA384_GUID`, `EFI_CERT_V2_X509_SHA512_GUID`, `EFI_CERT_V2_X509_SM3_GUID` |
+
 ```c
   #pragma pack(1)
 
@@ -45,6 +69,10 @@ signature_list_version = 2
     EFI_GUID                 SignatureOwner;
     UINT8                    SignatureData [_];
   }   EFI_SIGNATURE_DATA;
+
+  typedef struct _EFI_SIGNATURE_V2_DATA {
+    UINT8                    SignatureData [_];
+  }   EFI_SIGNATURE_V2_DATA;
 
   typedef struct _EFI_SIGNATURE_LIST {
     EFI_GUID                 SignatureType;
