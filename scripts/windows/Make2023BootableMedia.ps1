@@ -8,8 +8,8 @@
 .NOTES
     File Name  : Make2023BootableMedia.ps1
     Author     : Microsoft Corporation
-    Version    : 1.4
-    Date       : 2026-03-13
+    Version    : 1.5
+    Date       : 2026-10-27
 
 .LICENSE
     Licensed under the BSD License. See License.txt in the project root for full license information.
