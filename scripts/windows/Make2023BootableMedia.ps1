@@ -8,7 +8,7 @@
 .NOTES
     File Name  : Make2023BootableMedia.ps1
     Author     : Microsoft Corporation
-    Version    : 1.5
+    Version    : 1.6
     Date       : 2026-10-27
 
 .LICENSE
@@ -620,6 +620,9 @@ function Validate-Parameters {
                 Write-Host "`r`n-USBDrive must specify a valid drive letter. ($USBDrive invalid!)`r`n" -ForegroundColor Red
                 return $false
             } else {
+                if ($FileSystem -eq "ExFAT") {
+                    Write-Host "`r`nWARNING: Most UEFI systems cannot boot from ExFAT. Use FAT32 unless the target firmware supports booting from ExFAT." -ForegroundColor Yellow
+                }
                 Write-Host "`r`nWARNING: Contents on drive [$USBDrive] will be erased! Continue? (Y/N) " -ForegroundColor Yellow
                 $response = Read-Host
                 if ($response -ne "Y") {
@@ -634,7 +637,7 @@ function Validate-Parameters {
                     Write-Dbg-Host "Partition size: $($partition.Size / 1GB)GB"
                     if ($partition.Size -gt 32GB) {
                         Write-Host "Target drive partition is larger than 32GB and cannot be formatted as FAT32. " -ForegroundColor Red
-                        Write-Host "Create a partition smaller than 32GB and try again (or use ExFAT)." -ForegroundColor Red
+                        Write-Host "Create a partition of 32GB or smaller and try again." -ForegroundColor Red
                         return $false
                     }
                 }
@@ -1062,7 +1065,7 @@ $global:Dbg_Pause = $false
 $global:Dbg_Output = $DebugOn
 
 try {
-    Write-Host "`r`n`r`nMicrosoft 'Windows UEFI CA 2023' Media Update Script - Version 1.4`r`n" -ForegroundColor DarkYellow
+    Write-Host "`r`n`r`nMicrosoft 'Windows UEFI CA 2023' Media Update Script - Version 1.6`r`n" -ForegroundColor DarkYellow
 
     # First validate that the required tools/environment exist
     $result = Validate-Parameters -TargetType $TargetType -ISOPath $ISOPath -USBDrive $USBDrive -NewMediaPath $NewMediaPath -FileSystem $FileSystem -StagingDir $StagingDir
