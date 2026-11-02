@@ -3,7 +3,7 @@ edk2-pytool-extensions==0.31.3
 ruff==0.17.2
 pytest==9.1.1
 pefile==2024.8.26
-pyasn1==0.6.4
+pyasn1==0.6.5
 pyasn1_modules==0.4.2
 cryptography==50.0.2
 jsonschema[format]==4.26.0
