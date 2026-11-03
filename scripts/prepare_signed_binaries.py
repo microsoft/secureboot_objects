@@ -66,7 +66,10 @@ def main() -> int:
             destination = tmp_path if len(sources) == 1 else tmp_path / source
             shutil.copytree(source_path, destination, dirs_exist_ok=True)
 
-        for signed_file in (*tmp_path.rglob("*.bin"), *tmp_path.rglob("*.efiauth2")):
+        for signed_file in tmp_path.rglob("*"):
+            if not signed_file.is_file() or signed_file.suffix not in {".bin", ".efiauth2"}:
+                continue
+
             receipt = get_signed_payload_receipt(signed_file)
             receipt_json = json.dumps(receipt, indent=4)
             receipt_path = signed_file.with_suffix('.json')
