@@ -33,6 +33,13 @@ jobs:
     steps:
     - name: Checkout Self
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        # Exclude the 465 MB HighConfidenceBuckets archive; checks and builds use these paths.
+        sparse-checkout: |
+          PreSignedObjects
+          PostSignedObjects
+          Templates
+          scripts
 
     - name: Generate Token
       if: github.event_name == 'release'
