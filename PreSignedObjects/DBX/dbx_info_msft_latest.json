@@ -497,7 +497,6 @@
                 "flatHash": "3D23947C39680B9FCF22B092B97C9D38EDCC02F7AD13D3A925D1EE0B62797E73",
                 "filename": "grubx64.efi",
                 "description": "CVE-2020-10713; CVE-2020-14308; CVE-2020-14309; CVE-2020-14310; CVE-2020-14311; CVE-2020-15705; CVE-2020-15706; CVE-2020-15707",
-                "isOptional": "true",
                 "companyName": "Canonical",
                 "dateOfAddition": "2020-07-01",
                 "signingAuthority": "CN = Microsoft Corporation UEFI CA 2011"
@@ -508,7 +507,6 @@
                 "flatHash": "0AC2943ABF5EF953B939247B74331FB2C437E405A81DD5569D9CFF1D6183D53A",
                 "filename": "gcdx64.efi",
                 "description": "CVE-2020-10713; CVE-2020-14308; CVE-2020-14309; CVE-2020-14310; CVE-2020-14311; CVE-2020-15705; CVE-2020-15706; CVE-2020-15707",
-                "isOptional": "true",
                 "companyName": "Canonical",
                 "dateOfAddition": "2020-07-01",
                 "signingAuthority": "CN = Microsoft Corporation UEFI CA 2011"
@@ -519,7 +517,6 @@
                 "flatHash": "8E8ADDB29426D845A0101C2C1F26C2E7FE8C78128AB04F16CFCB4E06461B0101",
                 "filename": "grubnetx64.efi",
                 "description": "CVE-2020-10713; CVE-2020-14308; CVE-2020-14309; CVE-2020-14310; CVE-2020-14311; CVE-2020-15705; CVE-2020-15706; CVE-2020-15707",
-                "isOptional": "true",
                 "companyName": "Canonical",
                 "dateOfAddition": "2020-07-01",
                 "signingAuthority": "CN = Microsoft Corporation UEFI CA 2011"
